@@ -114,8 +114,8 @@ struct DigitalConsoleEqPlugin : public webclap::Plugin {
 			band.freq = paramValue(bandParams[b] + 1);
 			band.q = paramValue(bandParams[b] + 2);
 		}
-		s.bands[0].parametric = paramValue(pLType) >= 0.5;
-		s.bands[digital_console_eq::bandCount - 1].parametric = paramValue(pHType) >= 0.5;
+		s.bands[0].type = int(paramValue(pLType));
+		s.bands[digital_console_eq::bandCount - 1].type = int(paramValue(pHType));
 		s.solo = int(paramValue(pSolo));
 		return s;
 	}

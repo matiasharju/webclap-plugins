@@ -7,9 +7,10 @@
 (function (root) {
 	'use strict';
 
-	const shelfQ = Math.SQRT1_2, butterworthQ = Math.SQRT1_2;
+	const butterworthQ = Math.SQRT1_2;
+	const SHELF = 0, PEQ = 1; // band types (L and H only; bands 1-4 are always PEQ)
 
-	// The six bands: parameter keys, and whether the band can be a shelf
+	// The six bands: parameter keys, and which side the band's shelf works on
 	const BANDS = [
 		{id: 'l', gain: 'lGain', freq: 'lFreq', q: 'lQ', type: 'lType', shelf: 'low'},
 		{id: 'b1', gain: 'b1Gain', freq: 'b1Freq', q: 'b1Q'},
@@ -64,11 +65,10 @@
 		return [m0 + m1*lpRe, m1*lpIm];
 	}
 
+	const bandType = (band, p) => band.type ? Math.round(p[band.type]) : PEQ;
 	function bandFilter(band, p, sr) {
-		const gain = p[band.gain]*p.mix/100, freq = p[band.freq], q = p[band.q];
-		if (band.shelf && p[band.type] < 0.5) {
-			return band.shelf === 'low' ? lowShelf(freq, gain, shelfQ, sr) : highShelf(freq, gain, shelfQ, sr);
-		}
+		const gain = p[band.gain]*p.mix/100, freq = p[band.freq], q = p[band.q], low = band.shelf === 'low';
+		if (bandType(band, p) === SHELF) return low ? lowShelf(freq, gain, q, sr) : highShelf(freq, gain, q, sr);
 		return bell(freq, gain, q, sr);
 	}
 
@@ -96,9 +96,10 @@
 
 		const solo = Math.round(p.solo);
 		if (solo > 0) {
+			// shelves work on everything below (L) or above (H) their frequency
 			const band = BANDS[solo - 1], f = p[band.freq];
-			const shelf = band.shelf && p[band.type] < 0.5;
-			result.solo = svf(shelf ? (band.shelf === 'low' ? lowpass(f, shelfQ, sr) : highpass(f, shelfQ, sr)) : bandpass(f, p[band.q], sr), t);
+			const whole = bandType(band, p) !== PEQ;
+			result.solo = svf(whole ? (band.shelf === 'low' ? lowpass(f, butterworthQ, sr) : highpass(f, butterworthQ, sr)) : bandpass(f, p[band.q], sr), t);
 		}
 		return result;
 	}
@@ -120,7 +121,7 @@
 		return result;
 	}
 
-	const api = {responseDb, sectionsDb, BANDS};
+	const api = {responseDb, sectionsDb, BANDS, bandType, SHELF, PEQ};
 	if (typeof module === 'object' && module.exports) module.exports = api;
 	else root.EqResponse = api;
 })(this);

@@ -18,8 +18,9 @@ namespace digital_console_eq {
 using namespace webclap::dsp;
 
 constexpr int bandCount = 6; // L, 1, 2, 3, 4, H
-constexpr double shelfQ = 0.7071067811865476;
 constexpr double butterworthQ = 0.7071067811865476;
+
+enum BandType {typeShelf, typePeq};
 
 struct Settings {
 	bool lcOn = false, hcOn = false, tiltOn = false;
@@ -31,7 +32,7 @@ struct Settings {
 	double mix = 100; // %
 	struct Band {
 		double gain = 0, freq = 1000, q = 1;
-		bool parametric = true; // L and H can be shelves
+		int type = typePeq; // L and H can also be shelves
 	} bands[bandCount];
 	int solo = 0; // 0 = off, 1-6 = band L..H
 };
@@ -66,7 +67,7 @@ public:
 			updateFilters(settings);
 
 			const double lcMix = current[sLcMix], hcMix = current[sHcMix], eqMix = current[sEqMix], soloMix = current[sSoloMix];
-			const double lBellMix = current[sBand + 0*perBand + bParametric], hBellMix = current[sBand + 5*perBand + bParametric];
+			const double *lMix = current + sBand + 0*perBand + bShelfMix, *hMix = current + sBand + 5*perBand + bShelfMix;
 			for (int c = 0; c < 2; ++c) {
 				for (uint32_t i = start; i < end; ++i) {
 					double x = in[c][i];
@@ -80,12 +81,9 @@ public:
 
 					// EQ slot
 					double dry = x;
-					double shelf = lShelf.process(c, x), bell = bells[0].process(c, x);
-					x = shelf + lBellMix*(bell - shelf);
+					x = lMix[0]*lShelf.process(c, x) + lMix[1]*bells[0].process(c, x);
 					for (int b = 1; b <= 4; ++b) x = bells[b].process(c, x);
-					shelf = hShelf.process(c, x);
-					bell = bells[5].process(c, x);
-					x = shelf + hBellMix*(bell - shelf);
+					x = hMix[0]*hShelf.process(c, x) + hMix[1]*bells[5].process(c, x);
 					x = dry + eqMix*(x - dry);
 
 					// band solo: just the selected band's range, from the signal entering the EQ
@@ -108,7 +106,7 @@ private:
 	double sampleRate = 48000, smoothingCoeff = 1;
 
 	// Smoothed values: frequencies and Qs as log2 (so they glide evenly), gains in dB, switches as 0-1 crossfades
-	enum {bGain, bFreq, bQ, bParametric, perBand};
+	enum {bGain, bFreq, bQ, bShelfMix, bPeqMix, perBand}; // the two mixes crossfade between shelf and bell
 	enum {sLcMix, sLcFreq, sHcMix, sHcFreq, sTiltGain, sTiltFreq, sEqMix, sMix, sSoloMix,
 		sBand, count = sBand + bandCount*perBand};
 	double current[count] = {};
@@ -133,7 +131,8 @@ private:
 			bt[bGain] = s.bands[b].gain;
 			bt[bFreq] = std::log2(s.bands[b].freq);
 			bt[bQ] = std::log2(s.bands[b].q);
-			bt[bParametric] = s.bands[b].parametric;
+			bt[bShelfMix] = s.bands[b].type == typeShelf;
+			bt[bPeqMix] = s.bands[b].type == typePeq;
 		}
 	}
 
@@ -169,8 +168,8 @@ private:
 			const double *bc = c + sBand + b*perBand;
 			const double gain = bc[bGain]*c[sMix], freq = std::exp2(bc[bFreq]), q = std::exp2(bc[bQ]);
 			bells[b].set(bell(freq, gain, q, sr));
-			if (b == 0) lShelf.set(lowShelf(freq, gain, shelfQ, sr));
-			if (b == bandCount - 1) hShelf.set(highShelf(freq, gain, shelfQ, sr));
+			if (b == 0) lShelf.set(lowShelf(freq, gain, q, sr));
+			if (b == bandCount - 1) hShelf.set(highShelf(freq, gain, q, sr));
 		}
 
 		// band solo
@@ -179,8 +178,9 @@ private:
 			const int b = soloBand - 1;
 			const double *bc = c + sBand + b*perBand;
 			const double freq = std::exp2(bc[bFreq]), q = std::exp2(bc[bQ]);
-			if (b == 0 && !s.bands[0].parametric) solo.set(lowpass(freq, shelfQ, sr));
-			else if (b == bandCount - 1 && !s.bands[b].parametric) solo.set(highpass(freq, shelfQ, sr));
+			// shelves work on everything below (L) or above (H) their frequency
+			if (b == 0 && s.bands[0].type != typePeq) solo.set(lowpass(freq, butterworthQ, sr));
+			else if (b == bandCount - 1 && s.bands[b].type != typePeq) solo.set(highpass(freq, butterworthQ, sr));
 			else solo.set(bandpass(freq, q, sr));
 		}
 	}

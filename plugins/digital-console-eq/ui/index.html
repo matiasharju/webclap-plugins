@@ -193,14 +193,19 @@
 	.readouts {
 		display: flex;
 		gap: 18px;
+		justify-content: center;
+		gap: 40px;
 		height: 34px;
 		margin-top: 6px;
 		padding: 0 8px;
 	}
 	.readout {
-		flex: 1;
+		width: 160px;
 		cursor: ew-resize;
 		touch-action: none;
+	}
+	.readout.hidden {
+		visibility: hidden;
 	}
 	.readout .row {
 		display: flex;
@@ -232,6 +237,22 @@
 		margin-left: -1.5px;
 		border-radius: 1px;
 		background: var(--text);
+	}
+	.readout[data-mode="freq"] .bar i {
+		width: 8px;
+		margin-left: -4px;
+		background: var(--lit-blue);
+	}
+	/* Q: a bar as wide as the band (low Q = wide), growing from the centre */
+	.readout[data-mode="q"] .bar b {
+		position: absolute;
+		top: -1px;
+		height: 6px;
+		border-radius: 3px;
+		background: var(--lit-green);
+	}
+	.readout[data-mode="q"] .bar i {
+		left: 50%;
 	}
 
 	/* filter settings, over the lower part of the screen */
@@ -374,11 +395,20 @@
 		background: #0d0e10;
 	}
 	.icon-label svg {
-		width: 54px;
-		height: 14px;
+		width: 66px;
+		height: 16px;
 		fill: none;
-		stroke: #c9cdd4;
-		stroke-width: 1.6;
+		stroke-width: 1.8;
+		stroke-linecap: round;
+	}
+	/* only the band's current type is lit */
+	.icon-label path {
+		stroke: var(--lit-amber);
+		opacity: 0;
+		filter: drop-shadow(0 0 2px var(--lit-amber));
+	}
+	.icon-label path.lit {
+		opacity: 1;
 	}
 
 	/* knobs (encoders and small screen knobs) */
@@ -478,7 +508,7 @@
 
 		<div class="main">
 			<div class="graph-wrap">
-				<canvas id="graph" width="1208" height="416" title="Drag a marker: up/down = gain, sideways = frequency · Ctrl+drag or wheel = Q · Double-click = reset band"></canvas>
+				<canvas id="graph" width="1208" height="416" title="Drag a marker: up/down = gain, sideways = frequency · Ctrl+drag up/down or wheel = Q · Double-click = reset band"></canvas>
 			</div>
 			<div class="bands" id="bands">
 				<button class="band-solo" data-toggle-solo aria-pressed="false">BAND SOLO</button>
@@ -487,7 +517,7 @@
 
 		<div class="readouts">
 			<div class="readout" data-mode="gain"><div class="row"><span class="label"></span><span class="value"></span></div><div class="bar"><i></i></div></div>
-			<div class="readout" data-mode="q"><div class="row"><span class="label"></span><span class="value"></span></div><div class="bar"><i></i></div></div>
+			<div class="readout" data-mode="q"><div class="row"><span class="label"></span><span class="value"></span></div><div class="bar"><b></b><i></i></div></div>
 			<div class="readout" data-mode="freq"><div class="row"><span class="label"></span><span class="value"></span></div><div class="bar"><i></i></div></div>
 		</div>
 
@@ -519,13 +549,13 @@
 		</div>
 		<div class="hw-buttons">
 			<div class="hw" style="--lit: var(--lit-amber)"><button data-toggle="eqOn">EQ</button></div>
-			<div class="icon-label" title="With SHIFT, encoder 1 is the low band (L)"><svg viewBox="0 0 54 14"><path d="M2 3 H8 Q12 3 14 11 H18 M22 11 Q27 1 32 11 M36 11 Q40 3 46 3 H52"/></svg></div>
+			<div class="icon-label" id="l-type" title="Low band (L) shape: shelf or bell, and LC when the lo cut filter is on"><svg viewBox="0 0 66 16"><path data-type="0" d="M2 4 H7 Q11 4 12 10 Q13 12 18 12"/><path data-type="1" d="M24 13 Q30 13 32 4 Q34 13 40 13"/><path data-type="cut" d="M47 14 Q50 4 56 4 H64"/></svg></div>
 			<div class="modes">
 				<div class="hw"><button data-mode-button="gain">GAIN</button></div>
 				<div class="hw"><button data-mode-button="q">WIDTH</button></div>
 				<div class="hw"><button data-mode-button="freq">FREQ</button></div>
 			</div>
-			<div class="icon-label" title="With SHIFT, encoder 4 is the high band (H)"><svg viewBox="0 0 54 14"><path d="M2 3 H8 Q14 3 18 11 M22 11 Q27 1 32 11 M36 11 H40 Q42 3 46 3 H52"/></svg></div>
+			<div class="icon-label" id="h-type" title="High band (H) shape: bell or shelf, and HC when the hi cut filter is on"><svg viewBox="0 0 66 16"><path data-type="cut" d="M2 4 H10 Q16 4 19 14"/><path data-type="1" d="M26 13 Q32 13 34 4 Q36 13 42 13"/><path data-type="0" d="M48 12 Q53 12 54 10 Q55 4 59 4 H64"/></svg></div>
 			<div class="hw" style="--lit: var(--lit-green)"><button data-toggle-solo>LISTEN</button></div>
 		</div>
 		<div id="build"></div>
@@ -657,8 +687,8 @@
 		if (unit === 'Q') return Math.round(v*100)/100;
 		if (unit === '%') return Math.round(v);
 		if (unit === 'Hz') {
-			const step = v < 1000 ? 1 : v < 10000 ? 10 : 100; // matches what's displayed
-			return Math.round(v/step)*step;
+			const step = v < 1000 ? 0.1 : 10; // matches what's displayed
+			return Math.round(Math.round(v/step)*step*10)/10;
 		}
 		return v;
 	}
@@ -667,10 +697,11 @@
 		if (unit === 'dB') return `${v > 0.05 ? '+' : ''}${(Math.abs(v) < 0.05 ? 0 : v).toFixed(1)} dB`;
 		if (unit === 'Q') return v.toFixed(2);
 		if (unit === '%') return `${Math.round(v)} %`;
-		if (unit === 'Hz') return v >= 1000 ? `${(v/1000).toFixed(v < 10000 ? 2 : 1)} kHz` : `${v < 100 ? v.toFixed(1) : Math.round(v)} Hz`;
+		if (unit === 'Hz') return v >= 999.95 ? `${(v/1000).toFixed(2).replace('.', 'k')} Hz` : `${v.toFixed(1)} Hz`;
 		return String(v);
 	}
-	const isShelf = b => BANDS[b].type && state[BANDS[b].type] < 0.5;
+	const bandType = b => EqResponse.bandType(BANDS[b], state);
+	const typeName = b => bandType(b) === EqResponse.SHELF ? 'SHV' : 'PEQ';
 
 	// ---- dragging (knobs, readouts, MIX) ----
 
@@ -749,9 +780,10 @@
 	}
 	function drawKnob(el, key, label) {
 		el.querySelector('.label').textContent = label;
+		const valueEl = el.querySelector('.value');
 		if (!key) {
 			el.querySelector('svg').innerHTML = `<path class="track" d="${arc(START, END, 44)}"/><circle class="body" r="35"/>`;
-			el.querySelector('.value').textContent = '–';
+			if (valueEl) valueEl.textContent = '–';
 			return;
 		}
 		const p = PARAMS[key], v = state[key];
@@ -763,11 +795,11 @@
 			${Math.abs(angle - from) > 0.5 ? `<path class="fill" d="${arc(from, angle, 44)}"/>` : ''}
 			<circle class="body" r="35"/>
 			<line class="pointer" x1="${(px*0.35).toFixed(2)}" y1="${(py*0.35).toFixed(2)}" x2="${px.toFixed(2)}" y2="${py.toFixed(2)}"/>`;
-		el.querySelector('.value').textContent = format(key, v);
+		if (valueEl) valueEl.textContent = format(key, v);
 		el.setAttribute('aria-valuetext', format(key, v));
 	}
 	document.querySelectorAll('.knob').forEach(el => {
-		el.innerHTML = '<svg viewBox="-50 -50 100 100"></svg><span class="label"></span><span class="value"></span>';
+		el.innerHTML = '<svg viewBox="-50 -50 100 100"></svg><span class="label"></span>' + (el.classList.contains('encoder') ? '' : '<span class="value"></span>');
 		el.tabIndex = 0;
 		el.setAttribute('role', 'slider');
 	});
@@ -777,7 +809,8 @@
 	const encoderBand = i => ui.shift ? (i === 0 ? 0 : i === 3 ? 5 : null) : i + 1;
 	const encoderKey = i => {
 		const b = encoderBand(i);
-		return b === null ? null : BANDS[b][MODE_KEY[ui.mode]];
+		if (b === null) return null;
+		return BANDS[b][MODE_KEY[ui.mode]];
 	};
 	encoders.forEach((el, i) => {
 		draggable(el, () => encoderKey(i), {onPress: () => {
@@ -997,8 +1030,8 @@
 		if (!graphDrag) return;
 		const band = BANDS[graphDrag.b];
 		if (graphDrag.qMode) {
-			graphDrag.qNorm = Math.max(0, Math.min(1, graphDrag.qNorm + (e.clientX - graphDrag.x)/(e.shiftKey ? 2000 : 300)));
-			graphDrag.x = e.clientX;
+			graphDrag.qNorm = Math.max(0, Math.min(1, graphDrag.qNorm + (graphDrag.y - e.clientY)/(e.shiftKey ? 2000 : 300)));
+			graphDrag.y = e.clientY;
 			setValue(band.q, tidy(band.q, fromNorm(band.q, graphDrag.qNorm)));
 			return;
 		}
@@ -1057,25 +1090,36 @@
 
 			bandRows.forEach((row, b) => {
 				row.classList.toggle('selected', b === ui.band);
-				row.querySelector('.type').textContent = isShelf(b) ? 'SHV' : 'PEQ';
+				row.querySelector('.type').textContent = typeName(b);
 			});
 
 			readouts.forEach(el => {
 				const mode = el.dataset.mode, key = band[MODE_KEY[mode]];
 				el.classList.toggle('active', mode === ui.mode);
 				el.querySelector('.label').textContent = `${MODE_LABEL[mode]} ${band.label}`;
-				el.querySelector('.value').textContent = mode === 'q' && isShelf(ui.band) ? '– (shelf)' : format(key, state[key]);
-				el.querySelector('.bar i').style.left = `${toNorm(key, state[key])*100}%`;
+				el.querySelector('.value').textContent = format(key, state[key]);
+				if (mode === 'q') {
+					const width = Math.max(4, (1 - toNorm(key, state[key]))*100);
+					Object.assign(el.querySelector('.bar b').style, {left: `${50 - width/2}%`, width: `${width}%`});
+				} else {
+					el.querySelector('.bar i').style.left = `${toNorm(key, state[key])*100}%`;
+				}
 			});
 
 			encoders.forEach((el, i) => {
 				const b = encoderBand(i), key = encoderKey(i);
-				el.classList.toggle('disabled', b === null);
+				el.classList.toggle('disabled', key === null);
 				el.classList.toggle('selected', b === ui.band);
-				drawKnob(el, key, b === null ? (ui.shift ? '' : String(i + 1)) : BANDS[b].label);
-				if (key && ui.mode === 'q' && isShelf(b)) el.querySelector('.value').textContent = '–';
+				drawKnob(el, key, b === null ? '' : BANDS[b].label);
 			});
 			paramKnobs.forEach(el => drawKnob(el, el.dataset.param, el.dataset.label));
+			// band type displays: the band's shape (shelf or bell), plus the input slot's cut filter when it's on
+			for (const [id, b, cutKey] of [['l-type', 0, 'lcOn'], ['h-type', 5, 'hcOn']]) {
+				document.querySelectorAll(`#${id} path`).forEach(path => {
+					const type = path.dataset.type;
+					path.classList.toggle('lit', type === 'cut' ? state[cutKey] >= 0.5 : Number(type) === bandType(b));
+				});
+			}
 
 			drawGraph();
 		});

@@ -291,7 +291,8 @@ for (let pluginIndex = 0; pluginIndex < pluginCount; ++pluginIndex) {
 	let phase = 0, allFinite = true;
 	// Steady-state gain of a sine at `freq`, measured over a whole number of periods
 	function measureGainDb(freq) {
-		const settleBlocks = 20, measureBlocks = 20;
+		// long enough for narrow, low resonances (e.g. Q 6 at 40 Hz rings for ~0.3 s) to die away
+		const settleBlocks = 60, measureBlocks = 20;
 		const inSamples = [], outSamples = [];
 		for (let b = 0; b < settleBlocks + measureBlocks; ++b) {
 			const f32 = new Float32Array(memory.buffer);
