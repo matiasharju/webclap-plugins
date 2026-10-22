@@ -49,7 +49,7 @@ struct ConsoleEqPlugin : public webclap::Plugin {
 		{.id=40, .key="lfGain", .name="LF Gain", .unit="dB", .min=-20, .max=20, .defaultValue=0, .module="LF"},
 		{.id=41, .key="lfFreq", .name="LF Freq", .unit="Hz", .min=30, .max=450, .defaultValue=200, .decimals=0, .module="LF"},
 		{.id=30, .key="lmfGain", .name="LMF Gain", .unit="dB", .min=-20, .max=20, .defaultValue=0, .module="LMF"},
-		{.id=31, .key="lmfFreq", .name="LMF Freq", .unit="Hz", .min=120, .max=2500, .defaultValue=1000, .decimals=0, .module="LMF"},
+		{.id=31, .key="lmfFreq", .name="LMF Freq", .unit="Hz", .min=100, .max=2500, .defaultValue=1000, .decimals=0, .module="LMF"},
 		{.id=32, .key="lmfQ", .name="LMF Q", .unit="", .min=0.1, .max=3.5, .defaultValue=0.8, .decimals=2, .module="LMF"},
 		{.id=20, .key="hmfGain", .name="HMF Gain", .unit="dB", .min=-20, .max=20, .defaultValue=0, .module="HMF"},
 		{.id=21, .key="hmfFreq", .name="HMF Freq", .unit="Hz", .min=600, .max=7000, .defaultValue=3000, .decimals=0, .module="HMF"},
