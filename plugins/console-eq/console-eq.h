@@ -2,11 +2,11 @@
 
 // British-console-style channel EQ: HPF + LPF, then LF / LMF / HMF / HF bands.
 //
-// All filters are Andy Simper's linear trapezoidal state-variable filters
-// (https://cytomic.com/files/dsp/SvfLinearTrapOptimised2.pdf), which stay stable and click-free
-// when their settings move quickly (e.g. automation).
+// The filters come from shared/webclap/dsp.h.
 //
 // The UI draws its curve with the same formulas (ui/response.js), so keep the two in sync.
+
+#include "webclap/dsp.h"
 
 #include <algorithm>
 #include <cmath>
@@ -14,35 +14,7 @@
 
 namespace console_eq {
 
-constexpr double pi = 3.14159265358979323846;
-
-// ---- filter designs (mirrored in ui/response.js) ----
-
-struct Coeffs {
-	double g, k, m0, m1, m2; // output = m0*input + m1*bandpass + m2*lowpass
-};
-
-inline double prewarp(double freq, double sampleRate) {
-	return std::tan(pi*std::min(freq, 0.45*sampleRate)/sampleRate);
-}
-inline Coeffs bell(double freq, double gainDb, double q, double sampleRate) {
-	double A = std::pow(10.0, gainDb/40), k = 1/(q*A);
-	return {prewarp(freq, sampleRate), k, 1, k*(A*A - 1), 0};
-}
-inline Coeffs lowShelf(double freq, double gainDb, double q, double sampleRate) {
-	double A = std::pow(10.0, gainDb/40), k = 1/q;
-	return {prewarp(freq, sampleRate)/std::sqrt(A), k, 1, k*(A - 1), A*A - 1};
-}
-inline Coeffs highShelf(double freq, double gainDb, double q, double sampleRate) {
-	double A = std::pow(10.0, gainDb/40), k = 1/q;
-	return {prewarp(freq, sampleRate)*std::sqrt(A), k, A*A, k*(1 - A)*A, 1 - A*A};
-}
-inline Coeffs lowpass(double freq, double q, double sampleRate) {
-	return {prewarp(freq, sampleRate), 1/q, 0, 0, 1};
-}
-inline Coeffs highpass(double freq, double q, double sampleRate) {
-	return {prewarp(freq, sampleRate), 1/q, 1, -1/q, -1};
-}
+using namespace webclap::dsp;
 
 // Shelves are fixed at Q 0.707 (no overshoot), the LF/HF bells at Q 0.8
 constexpr double shelfQ = 0.7071067811865476, outerBellQ = 0.8;
@@ -53,64 +25,6 @@ constexpr double hpfQ = 1.0, lpfQ = 0.7071067811865476;
 inline double proportionalQFactor(double gainDb) {
 	return 0.5 + std::abs(gainDb)/15;
 }
-
-// ---- filter implementations ----
-
-struct Svf {
-	double a1 = 1, a2 = 0, a3 = 0, m0 = 1, m1 = 0, m2 = 0;
-	double ic1[2] = {0, 0}, ic2[2] = {0, 0};
-
-	void set(const Coeffs &c) {
-		a1 = 1/(1 + c.g*(c.g + c.k));
-		a2 = c.g*a1;
-		a3 = c.g*a2;
-		m0 = c.m0;
-		m1 = c.m1;
-		m2 = c.m2;
-	}
-	double process(int channel, double v0) {
-		double &s1 = ic1[channel], &s2 = ic2[channel];
-		double v3 = v0 - s2;
-		double v1 = a1*s1 + a2*v3;
-		double v2 = s2 + a2*s1 + a3*v3;
-		s1 = 2*v1 - s1;
-		s2 = 2*v2 - s2;
-		return m0*v0 + m1*v1 + m2*v2;
-	}
-	void reset() {
-		ic1[0] = ic1[1] = ic2[0] = ic2[1] = 0;
-	}
-	void flushDenormals() {
-		for (double *s : {&ic1[0], &ic1[1], &ic2[0], &ic2[1]}) {
-			if (std::abs(*s) < 1e-20) *s = 0;
-		}
-	}
-};
-
-struct OnePoleHighpass {
-	double G = 0;
-	double state[2] = {0, 0};
-
-	void set(double freq, double sampleRate) {
-		double g = prewarp(freq, sampleRate);
-		G = g/(1 + g);
-	}
-	double process(int channel, double x) {
-		double &s = state[channel];
-		double v = (x - s)*G;
-		double lp = v + s;
-		s = lp + v;
-		return x - lp;
-	}
-	void reset() {
-		state[0] = state[1] = 0;
-	}
-	void flushDenormals() {
-		for (double &s : state) {
-			if (std::abs(s) < 1e-20) s = 0;
-		}
-	}
-};
 
 // ---- the EQ ----
 
