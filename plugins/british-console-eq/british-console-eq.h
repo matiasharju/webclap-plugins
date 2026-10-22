@@ -1,7 +1,7 @@
 #pragma once
 
 // British-console-style channel EQ: HPF + LPF, then LF shelf, LMF and HMF bells, HF shelf.
-// The mid bands have "proportional Q", and MIX scales all band gains.
+// The mid bands have "proportional Q".
 //
 // The filters come from shared/webclap/dsp.h.
 //
@@ -37,7 +37,6 @@ struct Settings {
 	double lmfGain = 0, lmfFreq = 1000, lmfQ = 0.8;
 	double lfGain = 0, lfFreq = 200;
 	bool eqIn = true;
-	double mix = 100; // %
 };
 
 class ConsoleEq {
@@ -98,7 +97,7 @@ private:
 	// Smoothed values: frequencies and Qs as log2 (so they glide evenly), gains in dB, switches as 0-1 crossfades
 	enum {sHpfMix, sHpfFreq, sLpfMix, sLpfFreq,
 		sHfGain, sHfFreq, sHmfGain, sHmfFreq, sHmfQ, sLmfGain, sLmfFreq, sLmfQ, sLfGain, sLfFreq,
-		sEqMix, sMix, count};
+		sEqMix, count};
 	double current[count] = {};
 
 	OnePoleHighpass hpf1;
@@ -120,17 +119,16 @@ private:
 		t[sLfGain] = s.lfGain;
 		t[sLfFreq] = std::log2(s.lfFreq);
 		t[sEqMix] = s.eqIn;
-		t[sMix] = s.mix/100;
 	}
 
 	void updateFilters() {
 		const double *c = current;
-		const double sr = sampleRate, mix = c[sMix];
+		const double sr = sampleRate;
 		hpf1.set(std::exp2(c[sHpfFreq]), sr);
 		hpf2.set(highpass(std::exp2(c[sHpfFreq]), hpfQ, sr));
 		lpf.set(lowpass(std::exp2(c[sLpfFreq]), lpfQ, sr));
-		// MIX scales every band's gain; the mid bands' Q follows their (scaled) gain
-		const double lfGain = c[sLfGain]*mix, lmfGain = c[sLmfGain]*mix, hmfGain = c[sHmfGain]*mix, hfGain = c[sHfGain]*mix;
+		// the mid bands' Q follows their gain
+		const double lfGain = c[sLfGain], lmfGain = c[sLmfGain], hmfGain = c[sHmfGain], hfGain = c[sHfGain];
 		lfShelf.set(lowShelf(std::exp2(c[sLfFreq]), lfGain, shelfQ, sr));
 		lmf.set(bell(std::exp2(c[sLmfFreq]), lmfGain, std::exp2(c[sLmfQ])*proportionalQFactor(lmfGain), sr));
 		hmf.set(bell(std::exp2(c[sHmfFreq]), hmfGain, std::exp2(c[sHmfQ])*proportionalQFactor(hmfGain), sr));

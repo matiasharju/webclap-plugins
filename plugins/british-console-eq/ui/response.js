@@ -2,7 +2,7 @@
 // (and shared/webclap/dsp.h).
 // Used by the UI (to draw the curve) and by tests/smoke-test.mjs (to check the curve matches the audio).
 //
-// `params` uses the parameter keys: {hpfOn, hpfFreq, ..., eqIn, mix}
+// `params` uses the parameter keys: {hpfOn, hpfFreq, ..., eqIn}
 
 (function (root) {
 	'use strict';
@@ -56,8 +56,7 @@
 	// Complex response of each section at `freq`
 	function sections(p, sr, freq) {
 		const t = Math.tan(Math.PI*Math.min(freq, 0.4999*sr)/sr);
-		const mix = p.mix/100;
-		const lfGain = p.lfGain*mix, lmfGain = p.lmfGain*mix, hmfGain = p.hmfGain*mix, hfGain = p.hfGain*mix;
+		const lfGain = p.lfGain, lmfGain = p.lmfGain, hmfGain = p.hmfGain, hfGain = p.hfGain;
 
 		const hp = mul(onePoleHighpass(p.hpfFreq, sr, t), svf(highpass(p.hpfFreq, hpfQ, sr), t));
 		const lp = svf(lowpass(p.lpfFreq, lpfQ, sr), t);

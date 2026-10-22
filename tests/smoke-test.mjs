@@ -254,6 +254,15 @@ for (let pluginIndex = 0; pluginIndex < pluginCount; ++pluginIndex) {
 	check(webview, 'has clap.webview/3');
 	const gui = ext('clap.gui');
 	check(gui && fn(u32(gui))(plugin, allocString('webview'), 0), 'clap.gui supports the "webview" API');
+	// the window size the plugin asks for must match the UI page, or the host cuts it off
+	const pageSource = files['ui/index.html']?.toString() ?? '';
+	const pageSize = pageSource.match(/html,\s*body\s*\{[^}]*?width:\s*(\d+)px;[^}]*?height:\s*(\d+)px/);
+	if (gui && pageSize) {
+		const size = malloc(8);
+		fn(u32(gui + 20))(plugin, size, size + 4);
+		const [w, h] = [u32(size), u32(size + 4)];
+		check(w === +pageSize[1] && h === +pageSize[2], `window size ${w}x${h} matches the UI page (${pageSize[1]}x${pageSize[2]})`);
+	}
 
 	// Our plugins save "key value" lines in parameter order, which tells us the keys the UI and response.js use
 	streamBuffer = [];

@@ -28,7 +28,7 @@ struct ConsoleEqPlugin : public webclap::Plugin {
 			.manual_url="https://github.com/matiasharju/webclap-plugins",
 			.support_url="https://github.com/matiasharju/webclap-plugins/issues",
 			.version=WEBCLAP_BUILD,
-			.description="British-console-style channel EQ: filters, LF and HF shelves, LMF and HMF with proportional Q, MIX",
+			.description="British-console-style channel EQ: filters, LF and HF shelves, LMF and HMF with proportional Q",
 			.features=features
 		};
 		return &descriptor;
@@ -37,11 +37,11 @@ struct ConsoleEqPlugin : public webclap::Plugin {
 	// Parameter order (indices for paramValue())
 	enum {pHpfOn, pHpfFreq, pLpfOn, pLpfFreq,
 		pLfGain, pLfFreq, pLmfGain, pLmfFreq, pLmfQ, pHmfGain, pHmfFreq, pHmfQ, pHfGain, pHfFreq,
-		pEqIn, pMix};
+		pEqIn};
 
 	ConsoleEqPlugin(const clap_host *host) : Plugin(host, descriptor(), {
 		// IDs must never change or be reused: saved projects and automation refer to them.
-		// Retired: 12 (HF Shape), 42 (LF Shape), 51 (Q Mode), 52 (Output)
+		// Retired: 12 (HF Shape), 42 (LF Shape), 51 (Q Mode), 52 (Output), 53 (Mix)
 		{.id=1, .key="hpfOn", .name="HPF", .unit="", .min=0, .max=1, .defaultValue=0, .labels=offOn, .module="Filters"},
 		{.id=2, .key="hpfFreq", .name="HPF Freq", .unit="Hz", .min=16, .max=350, .defaultValue=80, .decimals=0, .module="Filters"},
 		{.id=3, .key="lpfOn", .name="LPF", .unit="", .min=0, .max=1, .defaultValue=0, .labels=offOn, .module="Filters"},
@@ -57,10 +57,9 @@ struct ConsoleEqPlugin : public webclap::Plugin {
 		{.id=10, .key="hfGain", .name="HF Gain", .unit="dB", .min=-15, .max=15, .defaultValue=0, .module="HF"},
 		{.id=11, .key="hfFreq", .name="HF Freq", .unit="Hz", .min=1500, .max=16000, .defaultValue=8000, .decimals=0, .module="HF"},
 		{.id=50, .key="eqIn", .name="EQ In", .unit="", .min=0, .max=1, .defaultValue=1, .labels=outIn, .module="Master"},
-		{.id=53, .key="mix", .name="Mix", .unit="%", .min=0, .max=125, .defaultValue=100, .decimals=0, .module="Master"},
 	}) {
-		uiWidth = 960;
-		uiHeight = 460;
+		uiWidth = 850;
+		uiHeight = 374;
 	}
 
 	console_eq::ConsoleEq eq;
@@ -82,7 +81,6 @@ struct ConsoleEqPlugin : public webclap::Plugin {
 		s.hfGain = paramValue(pHfGain);
 		s.hfFreq = paramValue(pHfFreq);
 		s.eqIn = paramValue(pEqIn) >= 0.5;
-		s.mix = paramValue(pMix);
 		return s;
 	}
 
