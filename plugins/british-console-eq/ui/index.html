@@ -257,8 +257,8 @@
 	// ---- layout: knob positions on the panel, colours, section labels ----
 
 	const KNOBS = [
-		{key: 'hpfFreq', x: 54, y: 96, color: '#3f4247'},
-		{key: 'lpfFreq', x: 54, y: 196, color: '#3f4247'},
+		{key: 'hpfFreq', x: 50, y: 96, color: '#3f4247'},
+		{key: 'lpfFreq', x: 50, y: 196, color: '#3f4247'},
 		{key: 'lfGain', x: 200, y: 96, color: '#2440d8'},
 		{key: 'lfFreq', x: 200, y: 196, color: '#2440d8'},
 		{key: 'lmfGain', x: 354, y: 96, color: '#178a30'},
@@ -271,8 +271,8 @@
 		{key: 'hfFreq', x: 710, y: 196, color: '#c8231e'},
 	];
 	const SWITCHES = [
-		{key: 'hpfOn', x: 122, y: 70, label: 'HPF<br>IN'},
-		{key: 'lpfOn', x: 122, y: 170, label: 'LPF<br>IN'},
+		{key: 'hpfOn', x: 127, y: 70, label: 'HPF<br>IN'},
+		{key: 'lpfOn', x: 127, y: 170, label: 'LPF<br>IN'},
 		{key: 'eqIn', x: 797, y: 70, label: 'EQ<br>IN'},
 	];
 	const LABELS = [
@@ -398,11 +398,28 @@
 	const grooves = [0, 60, 120, 180, 240, 300].map(angle =>
 		`<rect x="-2.2" y="-30.5" width="4.4" height="6" rx="1.5" fill="#000000" opacity="0.7" transform="rotate(${angle})"/>`).join('');
 
+	// the scale: dots just outside the knob's skirt, numbers a fixed gap outside the dots
+	const DOT_RADIUS = 39, DOT_SIZE = 2.6, NUMBER_GAP = 2.5;
+
+	// Puts each scale number as close to its dot as its size allows: wide numbers at the sides
+	// of a knob need to sit further out than narrow ones at the top
+	function placeScaleNumbers(svg) {
+		const clearance = DOT_RADIUS + DOT_SIZE + NUMBER_GAP;
+		svg.querySelectorAll('text.scale[data-angle]').forEach(text => {
+			const angle = Number(text.dataset.angle), box = text.getBBox();
+			const rad = angle*Math.PI/180;
+			const r = clearance + Math.abs(Math.sin(rad))*box.width/2 + Math.abs(Math.cos(rad))*box.height*0.36;
+			const [x, y] = polar(angle, r);
+			text.setAttribute('x', x.toFixed(1));
+			text.setAttribute('y', y.toFixed(1));
+		});
+	}
+
 	function knobSvg(knob) {
 		const p = PARAMS[knob.key];
 		let marks = '';
 		for (let i = 0; i <= 10; ++i) {
-			const [x, y] = polar(-135 + i*27, 40.5);
+			const [x, y] = polar(-135 + i*27, DOT_RADIUS);
 			marks += `<circle class="dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6"/>`;
 		}
 		if (p.unit === 'dB') {
@@ -410,14 +427,15 @@
 			marks += `<text class="scale" x="${lx}" y="${ly}">−</text><text class="scale" x="${rx}" y="${ry}">+</text>`;
 		} else if (p.scale.length > 2) {
 			for (const [value, angle] of p.scale) {
-				const [x, y] = polar(angle, 51);
-				marks += `<text class="scale" x="${x.toFixed(1)}" y="${y.toFixed(1)}">${scaleText(knob.key, value)}</text>`;
+				// placed properly by placeScaleNumbers() once it can be measured
+				marks += `<text class="scale" data-angle="${angle}">${scaleText(knob.key, value)}</text>`;
 			}
 		}
 		if (p.unit === 'Q') {
 			// wide and narrow bell symbols at the ends
-			marks += `<path d="M-40 54 V46 Q-40 44 -38 44 H-32 Q-30 44 -30 46 V54" fill="none" stroke="#f6f6f4" stroke-width="1.8"/>
-				<path d="M30 54 L35 44 L40 54" fill="none" stroke="#f6f6f4" stroke-width="1.8"/>`;
+			// (just below the 0.1 and 3.5 marks)
+			marks += `<path d="M-44 60 V53 Q-44 51 -42 51 H-36 Q-34 51 -34 53 V60" fill="none" stroke="#f6f6f4" stroke-width="1.8"/>
+				<path d="M34 60 L39 51 L44 60" fill="none" stroke="#f6f6f4" stroke-width="1.8"/>`;
 		}
 		const unit = {dB: 'dB', Hz: p.kHz ? 'kHz' : 'Hz', Q: 'Q', '%': '%'}[p.unit];
 		return `<svg viewBox="-62 -62 124 124">
@@ -446,6 +464,7 @@
 		el.setAttribute('aria-label', knob.key);
 		el.innerHTML = knobSvg(knob);
 		panel.appendChild(el);
+		placeScaleNumbers(el.querySelector('svg'));
 		attachKnob(el, knob.key);
 		return el;
 	});
