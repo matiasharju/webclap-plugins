@@ -16,10 +16,10 @@
 		--panel-edge: #4a4d52;
 		--ink: #f6f6f4;
 		--filters: #8f9399;
-		--lf: #b9bcc1;
-		--lmf: #5b7cff;
-		--hmf: #3fbf5a;
-		--hf: #ad74ea;
+		--lf: #5b7cff;
+		--lmf: #3fbf5a;
+		--hmf: #ff9a3d;
+		--hf: #ff5a52;
 		--led-on: #ff2b1f;
 	}
 	* {
@@ -108,16 +108,16 @@
 
 	.knob {
 		position: absolute;
-		width: 92px;
-		height: 92px;
-		margin: -46px 0 0 -46px;
+		width: 98px;
+		height: 98px;
+		margin: -49px 0 0 -49px;
 		outline: none;
 		cursor: ns-resize;
 		touch-action: none;
 	}
 	.knob svg {
-		width: 92px;
-		height: 92px;
+		width: 98px;
+		height: 98px;
 		overflow: visible;
 	}
 	.knob .dot {
@@ -259,16 +259,16 @@
 	const KNOBS = [
 		{key: 'hpfFreq', x: 54, y: 96, color: '#3f4247'},
 		{key: 'lpfFreq', x: 54, y: 196, color: '#3f4247'},
-		{key: 'lfGain', x: 200, y: 96, color: '#8d9095'},
-		{key: 'lfFreq', x: 200, y: 196, color: '#8d9095'},
-		{key: 'lmfGain', x: 354, y: 96, color: '#2440d8'},
-		{key: 'lmfQ', x: 306, y: 196, color: '#2440d8'},
-		{key: 'lmfFreq', x: 404, y: 196, color: '#2440d8'},
-		{key: 'hmfGain', x: 556, y: 96, color: '#178a30'},
-		{key: 'hmfQ', x: 508, y: 196, color: '#178a30'},
-		{key: 'hmfFreq', x: 604, y: 196, color: '#178a30'},
-		{key: 'hfGain', x: 710, y: 96, color: '#7432b4'},
-		{key: 'hfFreq', x: 710, y: 196, color: '#7432b4'},
+		{key: 'lfGain', x: 200, y: 96, color: '#2440d8'},
+		{key: 'lfFreq', x: 200, y: 196, color: '#2440d8'},
+		{key: 'lmfGain', x: 354, y: 96, color: '#178a30'},
+		{key: 'lmfQ', x: 306, y: 196, color: '#178a30'},
+		{key: 'lmfFreq', x: 404, y: 196, color: '#178a30'},
+		{key: 'hmfGain', x: 556, y: 96, color: '#e2680f'},
+		{key: 'hmfQ', x: 508, y: 196, color: '#e2680f'},
+		{key: 'hmfFreq', x: 604, y: 196, color: '#e2680f'},
+		{key: 'hfGain', x: 710, y: 96, color: '#c8231e'},
+		{key: 'hfFreq', x: 710, y: 196, color: '#c8231e'},
 	];
 	const SWITCHES = [
 		{key: 'hpfOn', x: 122, y: 70, label: 'HPF<br>IN'},
@@ -396,21 +396,21 @@
 	}
 	// six grip grooves around the cap's side wall (they turn with the knob)
 	const grooves = [0, 60, 120, 180, 240, 300].map(angle =>
-		`<rect x="-2" y="-27.5" width="4" height="5.5" rx="1.4" fill="#000000" opacity="0.7" transform="rotate(${angle})"/>`).join('');
+		`<rect x="-2.2" y="-30.5" width="4.4" height="6" rx="1.5" fill="#000000" opacity="0.7" transform="rotate(${angle})"/>`).join('');
 
 	function knobSvg(knob) {
 		const p = PARAMS[knob.key];
 		let marks = '';
 		for (let i = 0; i <= 10; ++i) {
-			const [x, y] = polar(-135 + i*27, 38);
+			const [x, y] = polar(-135 + i*27, 40.5);
 			marks += `<circle class="dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6"/>`;
 		}
 		if (p.unit === 'dB') {
-			const [lx, ly] = polar(-150, 47), [rx, ry] = polar(150, 47);
+			const [lx, ly] = polar(-150, 49), [rx, ry] = polar(150, 49);
 			marks += `<text class="scale" x="${lx}" y="${ly}">−</text><text class="scale" x="${rx}" y="${ry}">+</text>`;
 		} else if (p.scale.length > 2) {
 			for (const [value, angle] of p.scale) {
-				const [x, y] = polar(angle, 49);
+				const [x, y] = polar(angle, 51);
 				marks += `<text class="scale" x="${x.toFixed(1)}" y="${y.toFixed(1)}">${scaleText(knob.key, value)}</text>`;
 			}
 		}
@@ -422,16 +422,16 @@
 		const unit = {dB: 'dB', Hz: p.kHz ? 'kHz' : 'Hz', Q: 'Q', '%': '%'}[p.unit];
 		return `<svg viewBox="-62 -62 124 124">
 			${marks}
-			<text class="unit" x="0" y="48">${unit}</text>
-			<circle class="skirt" r="31" fill="url(#skirt)" stroke="#2e3034" stroke-width="1"/>
+			<text class="unit" x="0" y="50">${unit}</text>
+			<circle class="skirt" r="34" fill="url(#skirt)" stroke="#2e3034" stroke-width="1"/>
 			<!-- cap: a darker side wall with six grip grooves, and a flat top lit from the top-left -->
-			<circle r="27" fill="${shade(knob.color, 0.55)}"/>
+			<circle r="30" fill="${shade(knob.color, 0.55)}"/>
 			<g class="rotate">${grooves}</g>
-			<circle r="27" fill="url(#side-light)"/>
-			<circle r="22.5" fill="${knob.color}"/>
-			<circle r="22.5" fill="url(#face-light)"/>
-			<circle r="22.5" fill="none" stroke="url(#face-edge)" stroke-width="1.6"/>
-			<g class="rotate"><line x1="0" y1="-4" x2="0" y2="-20" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/></g>
+			<circle r="30" fill="url(#side-light)"/>
+			<circle r="25" fill="${knob.color}"/>
+			<circle r="25" fill="url(#face-light)"/>
+			<circle r="25" fill="none" stroke="url(#face-edge)" stroke-width="1.6"/>
+			<g class="rotate"><line x1="0" y1="-4" x2="0" y2="-22" stroke="#ffffff" stroke-width="4.4" stroke-linecap="round"/></g>
 		</svg>`;
 	}
 
