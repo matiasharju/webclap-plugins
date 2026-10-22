@@ -2,280 +2,285 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Console EQ</title>
+<title>British Console EQ</title>
 <style>
 	:root {
-		--bg: #1a1c21;
-		--panel: #22252c;
-		--panel-edge: #2e323b;
-		--grid: #30343e;
-		--grid-strong: #454a56;
-		--text: #e8eaef;
-		--muted: #8b919e;
-		--knob: #2c3038;
-		--knob-edge: #444952;
-		--filters: #a3a9b5;
-		--lf: #e2a245;
-		--lmf: #4f9cf5;
-		--hmf: #49c27d;
-		--hf: #ee5d5d;
-		--master: #e8eaef;
+		--bg: #2b2c2f;
+		--screen: #0c0d0f;
+		--screen-edge: #3c3f45;
+		--grid: #1d2026;
+		--grid-strong: #30343c;
+		--curve: #f4ecd8;
+		--panel-top: #777a7f;
+		--panel-bottom: #5f6267;
+		--panel-edge: #4a4d52;
+		--ink: #f6f6f4;
+		--filters: #8f9399;
+		--lf: #b9bcc1;
+		--lmf: #5b7cff;
+		--hmf: #3fbf5a;
+		--hf: #ad74ea;
+		--led-on: #ff2b1f;
 	}
 	* {
 		box-sizing: border-box;
 	}
 	html, body {
 		margin: 0;
-		width: 640px;
-		height: 420px;
+		width: 1040px;
+		height: 460px;
 		overflow: hidden;
 		background: var(--bg);
-		color: var(--text);
-		font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+		font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
 		user-select: none;
 		-webkit-user-select: none;
 	}
-	header {
-		display: flex;
-		align-items: baseline;
-		gap: 10px;
-		height: 34px;
-		padding: 10px 14px 0;
-	}
-	h1 {
-		margin: 0;
-		font-size: 15px;
-		font-weight: 650;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-	}
-	.subtitle {
-		font-size: 11px;
-		color: var(--muted);
-	}
-	#build {
-		margin-left: auto;
-		font-size: 10px;
-		opacity: 0.7;
+
+	/* ---- curve display (like a meter bridge above the panel) ---- */
+
+	.bridge {
+		position: absolute;
+		left: 12px;
+		top: 12px;
+		width: 1016px;
+		height: 118px;
+		padding: 8px 10px;
+		background: var(--screen);
+		border: 1px solid var(--screen-edge);
+		border-radius: 6px;
 	}
 	#curve {
 		display: block;
-		margin: 0 14px;
-		width: 612px;
-		height: 120px;
-		background: var(--panel);
-		border-radius: 6px;
+		width: 996px;
+		height: 100px;
 	}
-	.strip {
-		display: grid;
-		grid-template-columns: repeat(6, 1fr);
-		gap: 6px;
-		margin: 10px 14px 0;
-		height: 220px;
-	}
-	.section {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: space-between;
-		min-height: 0;
-		overflow: hidden;
-		padding: 5px 0 6px;
-		background: var(--panel);
+
+	/* ---- the panel ---- */
+
+	.panel {
+		position: absolute;
+		left: 12px;
+		top: 140px;
+		width: 1016px;
+		height: 308px;
+		background:
+			repeating-linear-gradient(90deg, #ffffff05 0 1px, transparent 1px 3px),
+			linear-gradient(var(--panel-top), var(--panel-bottom));
 		border: 1px solid var(--panel-edge);
-		border-top: 3px solid var(--accent);
-		border-radius: 6px;
+		border-radius: 8px;
+		box-shadow: inset 0 1px 0 #ffffff30;
 	}
-	.section h2 {
+	.panel h1 {
+		position: absolute;
+		left: 0;
+		right: 0;
+		top: 8px;
 		margin: 0;
-		font-size: 11px;
-		font-weight: 700;
-		letter-spacing: 0.1em;
-		color: var(--accent);
+		font: 600 22px Georgia, "Times New Roman", serif;
+		color: var(--ink);
+		text-align: center;
+		text-shadow: 0 1px 2px #00000080;
 	}
-	.section[data-band="filters"] { --accent: var(--filters); }
-	.section[data-band="lf"] { --accent: var(--lf); }
-	.section[data-band="lmf"] { --accent: var(--lmf); }
-	.section[data-band="hmf"] { --accent: var(--hmf); }
-	.section[data-band="hf"] { --accent: var(--hf); }
-	.section[data-band="master"] { --accent: var(--master); }
-	.section.bypassed {
-		opacity: 0.45;
+	.lines {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+	}
+	.lines path {
+		fill: none;
+		stroke: var(--ink);
+		stroke-width: 2;
+		opacity: 0.85;
+	}
+	.lines circle {
+		fill: #3a3c40;
+		stroke: #8d9095;
+		stroke-width: 1.5;
+	}
+	.section-label {
+		position: absolute;
+		font-size: 13px;
+		font-weight: 700;
+		color: var(--ink);
+		text-shadow: 0 1px 1px #00000060;
+		pointer-events: none;
 	}
 
 	.knob {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		width: 100%;
+		position: absolute;
+		width: 110px;
+		height: 110px;
+		margin: -55px 0 0 -55px;
 		outline: none;
 		cursor: ns-resize;
 		touch-action: none;
 	}
 	.knob svg {
-		width: 36px;
-		height: 36px;
+		width: 110px;
+		height: 110px;
 		overflow: visible;
 	}
-	.knob.big svg {
-		width: 46px;
-		height: 46px;
+	.knob .dot {
+		fill: var(--ink);
 	}
-	.knob .label {
-		margin-top: 1px;
-		font-size: 9.5px;
-		line-height: 11px;
-		font-weight: 600;
-		letter-spacing: 0.08em;
-		color: var(--muted);
+	.knob .scale {
+		font: 700 11.5px Arial, sans-serif;
+		fill: var(--ink);
+		text-anchor: middle;
+		dominant-baseline: middle;
 	}
-	.knob .value {
-		font-size: 11px;
-		line-height: 13px;
-		font-variant-numeric: tabular-nums;
+	.knob .unit {
+		font: 700 11.5px Arial, sans-serif;
+		fill: #d9dadc;
+		text-anchor: middle;
 	}
-	.knob:focus-visible .body {
-		stroke: var(--text);
-	}
-	.track {
-		fill: none;
-		stroke: var(--grid);
-		stroke-width: 6;
-		stroke-linecap: round;
-	}
-	.fill {
-		fill: none;
-		stroke: var(--accent);
-		stroke-width: 6;
-		stroke-linecap: round;
-	}
-	.body {
-		fill: var(--knob);
-		stroke: var(--knob-edge);
-		stroke-width: 1.5;
-	}
-	.pointer {
-		stroke: var(--accent);
-		stroke-width: 4;
-		stroke-linecap: round;
+	.knob:focus-visible .skirt {
+		stroke: var(--ink);
+		stroke-width: 2;
 	}
 
-	.toggle {
-		min-width: 54px;
-		padding: 3px 8px;
-		border: 1px solid var(--knob-edge);
-		border-radius: 10px;
-		background: var(--knob);
-		color: var(--muted);
-		font: 600 10px system-ui, sans-serif;
-		letter-spacing: 0.08em;
+	.switch {
+		position: absolute;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 12px;
+		margin-left: -18px;
+	}
+	.switch button {
+		width: 36px;
+		height: 44px;
+		padding: 0;
+		border: 1px solid #2d2f33;
+		border-radius: 2px;
+		background: linear-gradient(#f0f0ee, #c9c9c6);
+		box-shadow: 0 3px 0 #2f3135, 0 4px 6px #00000060;
+		font: 700 11px/1.15 Arial, sans-serif;
+		color: #1f2023;
 		cursor: pointer;
 	}
-	.toggle[aria-pressed="true"] {
-		border-color: var(--accent);
-		background: color-mix(in srgb, var(--accent) 25%, var(--knob));
-		color: var(--text);
+	.switch button[aria-pressed="true"] {
+		transform: translateY(2px);
+		background: linear-gradient(#dededb, #b9b9b6);
+		box-shadow: 0 1px 0 #2f3135, 0 2px 3px #00000060;
 	}
-	.toggle:focus-visible {
-		outline: 1px solid var(--text);
+	.led {
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: radial-gradient(circle at 35% 35%, #5a2020, #2a0d0d);
+		box-shadow: inset 0 0 2px #000;
+	}
+	.switch button[aria-pressed="true"] + .led {
+		background: radial-gradient(circle at 35% 35%, #ffb3ad, var(--led-on) 55%, #a10b04);
+		box-shadow: 0 0 8px var(--led-on);
 	}
 
-	#hint {
-		height: 32px;
-		margin: 0 14px;
-		padding-top: 4px;
-		font-size: 11.5px;
-		line-height: 1.3;
-		color: var(--muted);
-		text-align: center;
+	#bubble {
+		position: absolute;
+		display: none;
+		padding: 3px 7px;
+		background: #111214e6;
+		border: 1px solid #50545b;
+		border-radius: 4px;
+		font: 600 12px Arial, sans-serif;
+		color: #f4f4f4;
+		white-space: nowrap;
+		pointer-events: none;
+		transform: translate(-50%, -100%);
 	}
-	#hint b {
-		color: var(--text);
-		font-weight: 600;
+	#build {
+		position: absolute;
+		right: 12px;
+		bottom: 6px;
+		font-size: 9px;
+		color: #e2e3e5;
+		opacity: 0.6;
 	}
 </style>
 </head>
 <body>
-	<header>
-		<h1>Console EQ</h1>
-		<span class="subtitle">British-style channel EQ</span>
-		<span class="subtitle" id="build"></span>
-	</header>
-	<canvas id="curve" width="1224" height="240"></canvas>
+	<div class="bridge"><canvas id="curve" width="1992" height="200"></canvas></div>
 
-	<div class="strip">
-		<div class="section" data-band="filters">
-			<h2>FILTERS</h2>
-			<div class="knob" data-key="hpfFreq" data-label="HPF"></div>
-			<button class="toggle" data-key="hpfOn">HPF</button>
-			<div class="knob" data-key="lpfFreq" data-label="LPF"></div>
-			<button class="toggle" data-key="lpfOn">LPF</button>
-		</div>
-		<div class="section" data-band="lf">
-			<h2>LF</h2>
-			<div class="knob big" data-key="lfGain" data-label="GAIN"></div>
-			<div class="knob" data-key="lfFreq" data-label="FREQ"></div>
-			<button class="toggle" data-key="lfBell">BELL</button>
-		</div>
-		<div class="section" data-band="lmf">
-			<h2>LMF</h2>
-			<div class="knob big" data-key="lmfGain" data-label="GAIN"></div>
-			<div class="knob" data-key="lmfFreq" data-label="FREQ"></div>
-			<div class="knob" data-key="lmfQ" data-label="Q"></div>
-		</div>
-		<div class="section" data-band="hmf">
-			<h2>HMF</h2>
-			<div class="knob big" data-key="hmfGain" data-label="GAIN"></div>
-			<div class="knob" data-key="hmfFreq" data-label="FREQ"></div>
-			<div class="knob" data-key="hmfQ" data-label="Q"></div>
-		</div>
-		<div class="section" data-band="hf">
-			<h2>HF</h2>
-			<div class="knob big" data-key="hfGain" data-label="GAIN"></div>
-			<div class="knob" data-key="hfFreq" data-label="FREQ"></div>
-			<button class="toggle" data-key="hfBell">BELL</button>
-		</div>
-		<div class="section" data-band="master">
-			<h2>MASTER</h2>
-			<button class="toggle" data-key="eqIn">EQ IN</button>
-			<button class="toggle" data-key="qMode">PROP Q</button>
-			<div class="knob big" data-key="output" data-label="OUTPUT"></div>
-		</div>
+	<div class="panel" id="panel">
+		<svg class="lines" viewBox="0 0 1016 308">
+			<!-- section dividers -->
+			<path d="M160 16 V292"/>
+			<path d="M378 16 V142 L352 172 V292"/>
+			<path d="M588 46 V292"/>
+			<path d="M824 16 V142 L850 172 V292"/>
+			<path d="M950 16 V160 L966 186 V292"/>
+			<!-- screws -->
+			<circle cx="16" cy="16" r="5"/><circle cx="1000" cy="16" r="5"/>
+			<circle cx="16" cy="292" r="5"/><circle cx="1000" cy="292" r="5"/>
+		</svg>
+		<h1>British Console EQ</h1>
+		<div id="build"></div>
 	</div>
-	<div id="hint"></div>
+	<div id="bubble"></div>
 
 <script src="response.js"></script>
 <script>
 	// ---- parameters (must match entry.cpp) ----
+	// `scale`: [value, angle] pairs where the panel prints a number (angles from -135 to 135, 0 = up).
+	// The knob travel follows these marks, so the printed numbers are where the values really are.
 
 	const PARAMS = {
 		hpfOn: {min: 0, max: 1, def: 0},
-		hpfFreq: {min: 16, max: 350, def: 80, unit: 'Hz', log: true},
+		hpfFreq: {min: 16, max: 350, def: 80, unit: 'Hz', log: true,
+			scale: [[16, -135], [30, -90], [50, -45], [80, 0], [150, 45], [250, 90], [350, 135]]},
 		lpfOn: {min: 0, max: 1, def: 0},
-		lpfFreq: {min: 3000, max: 22000, def: 12000, unit: 'Hz', log: true},
-		hfGain: {min: -15, max: 15, def: 0, unit: 'dB', bipolar: true},
-		hfFreq: {min: 1500, max: 16000, def: 8000, unit: 'Hz', log: true},
-		hfBell: {min: 0, max: 1, def: 0},
-		hmfGain: {min: -15, max: 15, def: 0, unit: 'dB', bipolar: true},
-		hmfFreq: {min: 600, max: 7000, def: 2500, unit: 'Hz', log: true},
-		hmfQ: {min: 0.4, max: 4, def: 1, unit: 'Q', log: true},
-		lmfGain: {min: -15, max: 15, def: 0, unit: 'dB', bipolar: true},
-		lmfFreq: {min: 200, max: 2500, def: 600, unit: 'Hz', log: true},
-		lmfQ: {min: 0.4, max: 4, def: 1, unit: 'Q', log: true},
-		lfGain: {min: -15, max: 15, def: 0, unit: 'dB', bipolar: true},
-		lfFreq: {min: 30, max: 450, def: 100, unit: 'Hz', log: true},
-		lfBell: {min: 0, max: 1, def: 0},
+		lpfFreq: {min: 3000, max: 22000, def: 12000, unit: 'Hz', log: true, kHz: true,
+			scale: [[3000, -135], [5000, -90], [8000, -45], [12000, 0], [15000, 45], [18000, 90], [22000, 135]]},
+		lfGain: {min: -15, max: 15, def: 0, unit: 'dB'},
+		lfFreq: {min: 30, max: 450, def: 200, unit: 'Hz', log: true,
+			scale: [[30, -135], [50, -90], [100, -45], [200, 0], [300, 45], [450, 135]]},
+		lmfGain: {min: -15, max: 15, def: 0, unit: 'dB'},
+		lmfFreq: {min: 200, max: 2500, def: 1000, unit: 'Hz', log: true, kHz: true,
+			scale: [[200, -135], [300, -90], [800, -45], [1000, 0], [1500, 45], [2000, 90], [2500, 135]]},
+		lmfQ: {min: 0.1, max: 3.5, def: 0.8, unit: 'Q', log: true,
+			scale: [[3.5, -135], [1.5, -67.5], [0.8, 0], [0.3, 67.5], [0.1, 135]]},
+		hmfGain: {min: -15, max: 15, def: 0, unit: 'dB'},
+		hmfFreq: {min: 600, max: 7000, def: 3000, unit: 'Hz', log: true, kHz: true,
+			scale: [[600, -135], [800, -90], [1500, -45], [3000, 0], [4500, 45], [6000, 90], [7000, 135]]},
+		hmfQ: {min: 0.1, max: 3.5, def: 0.8, unit: 'Q', log: true,
+			scale: [[3.5, -135], [1.5, -67.5], [0.8, 0], [0.3, 67.5], [0.1, 135]]},
+		hfGain: {min: -15, max: 15, def: 0, unit: 'dB'},
+		hfFreq: {min: 1500, max: 16000, def: 8000, unit: 'Hz', log: true, kHz: true,
+			scale: [[1500, -135], [2000, -90], [5000, -45], [8000, 0], [10000, 45], [14000, 90], [16000, 135]]},
 		eqIn: {min: 0, max: 1, def: 1},
-		qMode: {min: 0, max: 1, def: 0},
-		output: {min: -15, max: 15, def: 0, unit: 'dB', bipolar: true},
+		mix: {min: 0, max: 125, def: 100, unit: '%'},
 	};
+	for (const p of Object.values(PARAMS)) {
+		if (!p.scale && p.unit) p.scale = [[p.min, -135], [p.max, 135]];
+	}
 
-	// Help shown while hovering a control (only for the less familiar ones)
-	const HINTS = {
-		qMode: '<b>PROP Q</b>: when on, the bells get narrower the more they are turned up or down.',
-	};
-	const DEFAULT_HINT = 'Drag knobs up or down · Shift = fine · Double-click = reset';
-	const BAND_OF = key => key.match(/^(hpf|lpf|lf|lmf|hmf|hf)/)?.[1].replace(/^(hpf|lpf)$/, 'filters') ?? 'master';
+	// ---- layout: knob positions on the panel, colours, section labels ----
+
+	const KNOBS = [
+		{key: 'hpfFreq', x: 58, y: 110, color: '#3f4247'},
+		{key: 'lpfFreq', x: 58, y: 232, color: '#3f4247'},
+		{key: 'mix', x: 216, y: 110, color: '#8d9095'},
+		{key: 'lfGain', x: 318, y: 110, color: '#8d9095'},
+		{key: 'lfFreq', x: 248, y: 232, color: '#8d9095'},
+		{key: 'lmfGain', x: 466, y: 110, color: '#2440d8'},
+		{key: 'lmfQ', x: 410, y: 232, color: '#2440d8'},
+		{key: 'lmfFreq', x: 526, y: 232, color: '#2440d8'},
+		{key: 'hmfGain', x: 706, y: 110, color: '#178a30'},
+		{key: 'hmfQ', x: 648, y: 232, color: '#178a30'},
+		{key: 'hmfFreq', x: 764, y: 232, color: '#178a30'},
+		{key: 'hfGain', x: 886, y: 110, color: '#7432b4'},
+		{key: 'hfFreq', x: 906, y: 232, color: '#7432b4'},
+	];
+	const SWITCHES = [
+		{key: 'hpfOn', x: 132, y: 84, label: 'HPF<br>IN'},
+		{key: 'lpfOn', x: 132, y: 206, label: 'LPF<br>IN'},
+		{key: 'eqIn', x: 988, y: 70, label: 'EQ<br>IN'},
+	];
+	const LABELS = [
+		['FILTERS', 18, 22], ['MIX', 244, 40], ['LF', 346, 40], ['LMF', 494, 40], ['HMF', 734, 40], ['HF', 914, 40],
+	];
+	const BAND_OF = key => key.match(/^(hpf|lpf|lf|lmf|hmf|hf)/)?.[1].replace(/^(hpf|lpf)$/, 'filters') ?? null;
 
 	// ---- talking to the plugin (clap.webview: ArrayBuffer messages, plain text inside) ----
 
@@ -335,88 +340,153 @@
 		endGesture(key);
 	}
 
-	// ---- value <-> knob position (0-1) ----
+	// ---- value <-> knob angle, following the printed scale ----
 
-	const toNorm = (key, v) => {
-		const p = PARAMS[key];
-		return p.log ? Math.log(v/p.min)/Math.log(p.max/p.min) : (v - p.min)/(p.max - p.min);
-	};
-	const fromNorm = (key, n) => {
-		const p = PARAMS[key];
-		n = Math.max(0, Math.min(1, n));
-		return p.log ? p.min*Math.pow(p.max/p.min, n) : p.min + n*(p.max - p.min);
-	};
-	// Rounds to a sensible step for display and for the host
+	function valueToAngle(key, v) {
+		const p = PARAMS[key], scale = p.scale, f = x => p.log ? Math.log(x) : x;
+		for (let i = 0; i < scale.length - 1; ++i) {
+			const [v0, a0] = scale[i], [v1, a1] = scale[i + 1];
+			const lo = Math.min(v0, v1), hi = Math.max(v0, v1);
+			if (v >= lo && v <= hi) return a0 + (f(v) - f(v0))/(f(v1) - f(v0))*(a1 - a0);
+		}
+		return v <= Math.min(scale[0][0], scale[scale.length - 1][0]) === (scale[0][0] < scale[scale.length - 1][0]) ? -135 : 135;
+	}
+	function angleToValue(key, angle) {
+		const p = PARAMS[key], scale = p.scale, f = x => p.log ? Math.log(x) : x, fi = x => p.log ? Math.exp(x) : x;
+		angle = Math.max(-135, Math.min(135, angle));
+		for (let i = 0; i < scale.length - 1; ++i) {
+			const [v0, a0] = scale[i], [v1, a1] = scale[i + 1];
+			if (angle >= a0 && angle <= a1) return fi(f(v0) + (angle - a0)/(a1 - a0)*(f(v1) - f(v0)));
+		}
+		return scale[scale.length - 1][0];
+	}
+	const toNorm = (key, v) => (valueToAngle(key, v) + 135)/270;
+	const fromNorm = (key, n) => angleToValue(key, Math.max(0, Math.min(1, n))*270 - 135);
+
 	function tidy(key, v) {
 		const unit = PARAMS[key].unit;
 		if (unit === 'dB') return Math.round(v*10)/10;
 		if (unit === 'Q') return Math.round(v*100)/100;
-		if (unit === 'Hz') {
-			const step = v < 1000 ? 1 : v < 10000 ? 10 : 100; // matches what's displayed
-			return Math.round(v/step)*step;
-		}
+		if (unit === '%') return Math.round(v);
+		if (unit === 'Hz') return v < 1000 ? Math.round(v) : Math.round(v/10)*10;
 		return v;
 	}
 	function format(key, v) {
 		const unit = PARAMS[key].unit;
 		if (unit === 'dB') return `${v > 0.05 ? '+' : ''}${(Math.abs(v) < 0.05 ? 0 : v).toFixed(1)} dB`;
-		if (unit === 'Q') return v.toFixed(2);
-		if (unit === 'Hz') return v >= 1000 ? `${(v/1000).toFixed(v < 10000 ? 2 : 1)} kHz` : `${Math.round(v)} Hz`;
+		if (unit === 'Q') return `Q ${v.toFixed(2)}`;
+		if (unit === '%') return `${Math.round(v)} %`;
+		if (unit === 'Hz') return v >= 1000 ? `${(v/1000).toFixed(2)} kHz` : `${Math.round(v)} Hz`;
 		return String(v);
 	}
+	const scaleText = (key, v) => {
+		const p = PARAMS[key];
+		return p.kHz ? String(v/1000) : String(v);
+	};
 
 	// ---- knobs ----
 
-	const START = -135, END = 135; // degrees, 0 = straight up
+	const panel = document.getElementById('panel');
+	const bubble = document.getElementById('bubble');
 	const polar = (deg, r) => [r*Math.sin(deg*Math.PI/180), -r*Math.cos(deg*Math.PI/180)];
-	function arc(from, to, r) {
-		const [x1, y1] = polar(from, r), [x2, y2] = polar(to, r);
-		const large = Math.abs(to - from) > 180 ? 1 : 0, sweep = to > from ? 1 : 0;
-		return `M${x1.toFixed(2)} ${y1.toFixed(2)}A${r} ${r} 0 ${large} ${sweep} ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+
+	function knobSvg(knob) {
+		const p = PARAMS[knob.key];
+		let marks = '';
+		for (let i = 0; i <= 10; ++i) {
+			const [x, y] = polar(-135 + i*27, 42);
+			marks += `<circle class="dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6"/>`;
+		}
+		if (p.unit === 'dB') {
+			const [lx, ly] = polar(-150, 52), [rx, ry] = polar(150, 52);
+			marks += `<text class="scale" x="${lx}" y="${ly}">−</text><text class="scale" x="${rx}" y="${ry}">+</text>`;
+		} else if (p.scale.length > 2) {
+			for (const [value, angle] of p.scale) {
+				const [x, y] = polar(angle, 54);
+				marks += `<text class="scale" x="${x.toFixed(1)}" y="${y.toFixed(1)}">${scaleText(knob.key, value)}</text>`;
+			}
+		}
+		if (p.unit === 'Q') {
+			// narrow and wide bell symbols at the ends
+			marks += `<path d="M-38 54 L-33 44 L-28 54" fill="none" stroke="#f6f6f4" stroke-width="1.8"/>
+				<path d="M28 54 V46 Q28 44 30 44 H36 Q38 44 38 46 V54" fill="none" stroke="#f6f6f4" stroke-width="1.8"/>`;
+		}
+		const unit = {dB: 'dB', Hz: p.kHz ? 'kHz' : 'Hz', Q: 'Q', '%': '%'}[p.unit];
+		return `<svg viewBox="-62 -62 124 124">
+			${marks}
+			<text class="unit" x="0" y="50">${unit}</text>
+			<circle class="skirt" r="31" fill="url(#skirt)" stroke="#2e3034" stroke-width="1"/>
+			<circle r="26" fill="${knob.color}"/>
+			<circle r="26" fill="url(#cap-shine)"/>
+			<line class="pointer" x1="0" y1="-5" x2="0" y2="-24" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+		</svg>`;
 	}
 
-	const knobs = [...document.querySelectorAll('.knob')];
-	knobs.forEach(el => {
-		el.innerHTML = `<svg viewBox="-50 -50 100 100"></svg><span class="label">${el.dataset.label}</span><span class="value"></span>`;
+	const knobEls = KNOBS.map(knob => {
+		const el = document.createElement('div');
+		el.className = 'knob';
+		el.dataset.key = knob.key;
+		el.style.left = `${knob.x}px`;
+		el.style.top = `${knob.y}px`;
 		el.tabIndex = 0;
 		el.setAttribute('role', 'slider');
-		el.setAttribute('aria-label', `${el.closest('.section').querySelector('h2').textContent} ${el.dataset.label}`);
+		el.setAttribute('aria-label', knob.key);
+		el.innerHTML = knobSvg(knob);
+		panel.appendChild(el);
+		attachKnob(el, knob.key);
+		return el;
 	});
-	function drawKnob(el) {
-		const key = el.dataset.key, p = PARAMS[key], v = state[key];
-		const angle = START + toNorm(key, v)*(END - START);
-		const from = p.bipolar ? 0 : START;
-		const [px, py] = polar(angle, 28);
-		el.querySelector('svg').innerHTML = `
-			<path class="track" d="${arc(START, END, 44)}"/>
-			${Math.abs(angle - from) > 0.5 ? `<path class="fill" d="${arc(from, angle, 44)}"/>` : ''}
-			<circle class="body" r="34"/>
-			<line class="pointer" x1="${(px*0.3).toFixed(2)}" y1="${(py*0.3).toFixed(2)}" x2="${px.toFixed(2)}" y2="${py.toFixed(2)}"/>`;
-		el.querySelector('.value').textContent = format(key, v);
-		el.setAttribute('aria-valuetext', format(key, v));
+	// shared gradients for the knobs
+	document.body.insertAdjacentHTML('beforeend', `<svg width="0" height="0" style="position:absolute">
+		<defs>
+			<radialGradient id="skirt" cx="40%" cy="30%" r="80%">
+				<stop offset="0" stop-color="#ffffff"/><stop offset="0.55" stop-color="#c4c6c9"/><stop offset="1" stop-color="#6d7075"/>
+			</radialGradient>
+			<radialGradient id="cap-shine" cx="38%" cy="30%" r="75%">
+				<stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/><stop offset="0.45" stop-color="#ffffff" stop-opacity="0.08"/>
+				<stop offset="1" stop-color="#000000" stop-opacity="0.35"/>
+			</radialGradient>
+		</defs></svg>`);
+
+	for (const [text, x, y] of LABELS) {
+		const el = document.createElement('div');
+		el.className = 'section-label';
+		el.textContent = text;
+		el.style.left = `${x}px`;
+		el.style.top = `${y}px`;
+		panel.appendChild(el);
 	}
 
-	knobs.forEach(el => {
-		const key = el.dataset.key;
-		let dragY = null, dragNorm = 0;
+	function showBubble(el, key) {
+		const rect = el.getBoundingClientRect();
+		bubble.textContent = format(key, state[key]);
+		bubble.style.left = `${rect.left + rect.width/2}px`;
+		bubble.style.top = `${rect.top + 10}px`;
+		bubble.style.display = 'block';
+	}
+	let bubbleOwner = null;
+
+	function attachKnob(el, key) {
+		let startY = null, startNorm = 0;
 		el.addEventListener('pointerdown', e => {
 			if (e.button !== 0) return;
-			el.setPointerCapture(e.pointerId);
+			try {
+				el.setPointerCapture(e.pointerId);
+			} catch (error) {} // not available for synthetic events
 			el.focus();
-			dragY = e.clientY;
-			dragNorm = toNorm(key, state[key]);
+			startY = e.clientY;
+			startNorm = toNorm(key, state[key]);
 			beginGesture(key);
 		});
 		el.addEventListener('pointermove', e => {
-			if (dragY === null) return;
-			dragNorm += (dragY - e.clientY)/(e.shiftKey ? 4000 : 200);
-			dragNorm = Math.max(0, Math.min(1, dragNorm));
-			dragY = e.clientY;
-			setValue(key, tidy(key, fromNorm(key, dragNorm)));
+			if (startY === null) return;
+			startNorm = Math.max(0, Math.min(1, startNorm + (startY - e.clientY)/(e.shiftKey ? 4000 : 200)));
+			startY = e.clientY;
+			setValue(key, tidy(key, fromNorm(key, startNorm)));
 		});
 		const endDrag = () => {
-			if (dragY === null) return;
-			dragY = null;
+			if (startY === null) return;
+			startY = null;
 			endGesture(key);
 		};
 		el.addEventListener('pointerup', endDrag);
@@ -442,37 +512,43 @@
 				gesture(key, () => setValue(key, PARAMS[key].def));
 			}
 		});
-	});
-
-	// ---- toggle buttons ----
-
-	const toggles = [...document.querySelectorAll('.toggle')];
-	toggles.forEach(el => {
-		const key = el.dataset.key;
-		el.addEventListener('click', () => gesture(key, () => setValue(key, state[key] >= 0.5 ? 0 : 1)));
-	});
-	function drawToggle(el) {
-		el.setAttribute('aria-pressed', state[el.dataset.key] >= 0.5 ? 'true' : 'false');
-	}
-
-	// ---- hover help ----
-
-	const hint = document.getElementById('hint');
-	document.querySelectorAll('[data-key]').forEach(el => {
+		// value bubble while hovering or turning
 		el.addEventListener('pointerenter', () => {
-			hint.innerHTML = HINTS[el.dataset.key] ?? DEFAULT_HINT;
-			hoveredBand = BAND_OF(el.dataset.key);
+			bubbleOwner = el;
+			hoveredBand = BAND_OF(key);
 			render();
 		});
 		el.addEventListener('pointerleave', () => {
-			hint.textContent = DEFAULT_HINT;
+			if (startY !== null) return;
+			bubbleOwner = null;
 			hoveredBand = null;
 			render();
 		});
-	});
-	hint.textContent = DEFAULT_HINT;
+		el.addEventListener('lostpointercapture', () => {
+			if (!el.matches(':hover')) {
+				bubbleOwner = null;
+				hoveredBand = null;
+				render();
+			}
+		});
+	}
 
-	// ---- response curve ----
+	// ---- switches ----
+
+	const switchEls = SWITCHES.map(sw => {
+		const el = document.createElement('div');
+		el.className = 'switch';
+		el.style.left = `${sw.x}px`;
+		el.style.top = `${sw.y}px`;
+		el.innerHTML = `<button aria-pressed="false">${sw.label}</button><span class="led"></span>`;
+		el.querySelector('button').addEventListener('click', () => gesture(sw.key, () => setValue(sw.key, state[sw.key] >= 0.5 ? 0 : 1)));
+		el.addEventListener('pointerenter', () => {hoveredBand = BAND_OF(sw.key); render();});
+		el.addEventListener('pointerleave', () => {hoveredBand = null; render();});
+		panel.appendChild(el);
+		return {el, key: sw.key};
+	});
+
+	// ---- curve ----
 
 	const canvas = document.getElementById('curve');
 	const ctx = canvas.getContext('2d');
@@ -481,25 +557,22 @@
 	const BAND_FREQ = {lf: 'lfFreq', lmf: 'lmfFreq', hmf: 'hmfFreq', hf: 'hfFreq'};
 
 	function drawCurve() {
-		const w = canvas.width, h = canvas.height, s = w/612;
+		const w = canvas.width, h = canvas.height, s = w/996;
 		const xOf = f => Math.log(f/F_MIN)/Math.log(F_MAX/F_MIN)*w;
-		const yOf = db => h/2 - db/DB_RANGE*(h/2 - 8*s);
+		const yOf = db => h/2 - db/DB_RANGE*(h/2 - 6*s);
 		const fOf = x => F_MIN*Math.pow(F_MAX/F_MIN, x/w);
 		ctx.clearRect(0, 0, w, h);
 
-		// grid
 		ctx.lineWidth = s;
-		ctx.font = `${10*s}px system-ui, sans-serif`;
-		ctx.fillStyle = css('--muted');
+		ctx.font = `${10*s}px Arial, sans-serif`;
 		for (const f of [30, 40, 50, 60, 70, 80, 90, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]) {
 			ctx.strokeStyle = [100, 1000, 10000].includes(f) ? css('--grid-strong') : css('--grid');
-			ctx.globalAlpha = [100, 1000, 10000].includes(f) ? 1 : 0.6;
 			ctx.beginPath();
 			ctx.moveTo(xOf(f), 0);
 			ctx.lineTo(xOf(f), h);
 			ctx.stroke();
 		}
-		ctx.globalAlpha = 1;
+		ctx.fillStyle = '#7d828c';
 		for (const [f, label] of [[50, '50'], [100, '100'], [200, '200'], [500, '500'], [1000, '1k'], [2000, '2k'], [5000, '5k'], [10000, '10k']]) {
 			ctx.fillText(label, xOf(f) + 3*s, h - 4*s);
 		}
@@ -517,14 +590,16 @@
 		ctx.lineTo(w, yOf(0));
 		ctx.stroke();
 
-		// each section on its own, then the total
 		const xs = [];
 		for (let x = 0; x <= w; x += 2) xs.push(x);
 		const sections = xs.map(x => EqResponse.sectionsDb(state, sampleRate, fOf(x)));
-		const total = xs.map(x => EqResponse.responseDb(state, sampleRate, fOf(x)));
 		const clampDb = db => Math.max(-DB_RANGE - 2, Math.min(DB_RANGE + 2, db));
 		const eqOn = state.eqIn >= 0.5;
 
+		ctx.save();
+		ctx.beginPath();
+		ctx.rect(0, 0, w, h);
+		ctx.clip();
 		for (const band of ['filters', 'lf', 'lmf', 'hmf', 'hf']) {
 			const active = band === 'filters' ? (state.hpfOn >= 0.5 || state.lpfOn >= 0.5) : eqOn;
 			if (!active) continue;
@@ -548,17 +623,17 @@
 			ctx.stroke();
 		}
 		ctx.globalAlpha = 1;
-		ctx.strokeStyle = css('--text');
+		ctx.strokeStyle = css('--curve');
 		ctx.lineWidth = 2.5*s;
 		ctx.lineJoin = 'round';
 		ctx.beginPath();
 		xs.forEach((x, i) => {
-			const y = yOf(clampDb(total[i]));
+			const y = yOf(clampDb(EqResponse.responseDb(state, sampleRate, fOf(x))));
 			i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
 		});
 		ctx.stroke();
+		ctx.restore();
 
-		// a dot for each band at its frequency
 		if (eqOn) {
 			for (const [band, freqKey] of Object.entries(BAND_FREQ)) {
 				const f = state[freqKey];
@@ -568,7 +643,7 @@
 				ctx.fillStyle = css('--' + band);
 				ctx.fill();
 				ctx.lineWidth = 1.5*s;
-				ctx.strokeStyle = css('--panel');
+				ctx.strokeStyle = css('--screen');
 				ctx.stroke();
 			}
 		}
@@ -581,13 +656,14 @@
 		if (frame) return;
 		frame = requestAnimationFrame(() => {
 			frame = 0;
-			knobs.forEach(drawKnob);
-			toggles.forEach(drawToggle);
-			const eqOn = state.eqIn >= 0.5;
-			document.querySelectorAll('.section').forEach(section => {
-				const band = section.dataset.band;
-				section.classList.toggle('bypassed', ['lf', 'lmf', 'hmf', 'hf'].includes(band) && !eqOn);
+			knobEls.forEach(el => {
+				const key = el.dataset.key;
+				el.querySelector('.pointer').setAttribute('transform', `rotate(${valueToAngle(key, state[key])})`);
+				el.setAttribute('aria-valuetext', format(key, state[key]));
 			});
+			switchEls.forEach(({el, key}) => el.querySelector('button').setAttribute('aria-pressed', state[key] >= 0.5));
+			if (bubbleOwner) showBubble(bubbleOwner, bubbleOwner.dataset.key);
+			else bubble.style.display = 'none';
 			drawCurve();
 		});
 	}

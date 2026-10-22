@@ -1,12 +1,13 @@
-// Frequency response of the Console EQ, using exactly the same filter designs as console-eq.h.
+// Frequency response of the British Console EQ, using exactly the same filter designs as console-eq.h
+// (and shared/webclap/dsp.h).
 // Used by the UI (to draw the curve) and by tests/smoke-test.mjs (to check the curve matches the audio).
 //
-// `params` uses the parameter keys: {hpfOn, hpfFreq, ..., output}
+// `params` uses the parameter keys: {hpfOn, hpfFreq, ..., eqIn, mix}
 
 (function (root) {
 	'use strict';
 
-	const shelfQ = Math.SQRT1_2, outerBellQ = 0.8, hpfQ = 1, lpfQ = Math.SQRT1_2;
+	const shelfQ = Math.SQRT1_2, hpfQ = 1, lpfQ = Math.SQRT1_2;
 
 	function prewarp(freq, sampleRate) {
 		return Math.tan(Math.PI*Math.min(freq, 0.45*sampleRate)/sampleRate);
@@ -29,13 +30,13 @@
 	function highpass(freq, q, sr) {
 		return {g: prewarp(freq, sr), k: 1/q, m0: 1, m1: -1/q, m2: -1};
 	}
+	// "Proportional Q": gentle boosts/cuts are broad, big ones get narrower
 	function proportionalQFactor(gainDb) {
 		return 0.5 + Math.abs(gainDb)/15;
 	}
 
 	// Complex numbers as [re, im]
-	const mul = (a, b) => [a[0]*b[0] - a[1]*b[1], a[0]*b[1] + a[1]*b[0]];
-	const lerp = (a, b, t) => [a[0] + (b[0] - a[0])*t, a[1] + (b[1] - a[1])*t];
+	const mul = (...values) => values.reduce((a, b) => [a[0]*b[0] - a[1]*b[1], a[0]*b[1] + a[1]*b[0]], [1, 0]);
 	const ONE = [1, 0];
 	const toDb = (c) => 10*Math.log10(c[0]*c[0] + c[1]*c[1] + 1e-30);
 
@@ -55,30 +56,26 @@
 	// Complex response of each section at `freq`
 	function sections(p, sr, freq) {
 		const t = Math.tan(Math.PI*Math.min(freq, 0.4999*sr)/sr);
-		const bellQ = (q, gainDb) => q*(p.qMode >= 0.5 ? proportionalQFactor(gainDb) : 1);
+		const mix = p.mix/100;
+		const lfGain = p.lfGain*mix, lmfGain = p.lmfGain*mix, hmfGain = p.hmfGain*mix, hfGain = p.hfGain*mix;
 
 		const hp = mul(onePoleHighpass(p.hpfFreq, sr, t), svf(highpass(p.hpfFreq, hpfQ, sr), t));
 		const lp = svf(lowpass(p.lpfFreq, lpfQ, sr), t);
-		const lf = p.lfBell >= 0.5
-			? svf(bell(p.lfFreq, p.lfGain, bellQ(outerBellQ, p.lfGain), sr), t)
-			: svf(lowShelf(p.lfFreq, p.lfGain, shelfQ, sr), t);
-		const lmf = svf(bell(p.lmfFreq, p.lmfGain, bellQ(p.lmfQ, p.lmfGain), sr), t);
-		const hmf = svf(bell(p.hmfFreq, p.hmfGain, bellQ(p.hmfQ, p.hmfGain), sr), t);
-		const hf = p.hfBell >= 0.5
-			? svf(bell(p.hfFreq, p.hfGain, bellQ(outerBellQ, p.hfGain), sr), t)
-			: svf(highShelf(p.hfFreq, p.hfGain, shelfQ, sr), t);
 		return {
 			hpf: p.hpfOn >= 0.5 ? hp : ONE,
 			lpf: p.lpfOn >= 0.5 ? lp : ONE,
-			lf, lmf, hmf, hf
+			lf: svf(lowShelf(p.lfFreq, lfGain, shelfQ, sr), t),
+			lmf: svf(bell(p.lmfFreq, lmfGain, p.lmfQ*proportionalQFactor(lmfGain), sr), t),
+			hmf: svf(bell(p.hmfFreq, hmfGain, p.hmfQ*proportionalQFactor(hmfGain), sr), t),
+			hf: svf(highShelf(p.hfFreq, hfGain, shelfQ, sr), t),
 		};
 	}
 
 	// Total response in dB (what the plugin does to a sine wave at `freq`)
 	function responseDb(p, sampleRate, freq) {
 		const s = sections(p, sampleRate, freq);
-		const eq = lerp(ONE, mul(mul(s.lf, s.lmf), mul(s.hmf, s.hf)), p.eqIn >= 0.5 ? 1 : 0);
-		return toDb(mul(mul(s.hpf, s.lpf), eq)) + p.output;
+		const eq = p.eqIn >= 0.5 ? mul(s.lf, s.lmf, s.hmf, s.hf) : ONE;
+		return toDb(mul(s.hpf, s.lpf, eq));
 	}
 
 	// Each section on its own, in dB (for drawing the individual bands)

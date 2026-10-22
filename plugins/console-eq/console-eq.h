@@ -1,6 +1,7 @@
 #pragma once
 
-// British-console-style channel EQ: HPF + LPF, then LF / LMF / HMF / HF bands.
+// British-console-style channel EQ: HPF + LPF, then LF shelf, LMF and HMF bells, HF shelf.
+// The mid bands have "proportional Q", and MIX scales all band gains.
 //
 // The filters come from shared/webclap/dsp.h.
 //
@@ -16,8 +17,8 @@ namespace console_eq {
 
 using namespace webclap::dsp;
 
-// Shelves are fixed at Q 0.707 (no overshoot), the LF/HF bells at Q 0.8
-constexpr double shelfQ = 0.7071067811865476, outerBellQ = 0.8;
+// Shelves are fixed at Q 0.707 (no overshoot)
+constexpr double shelfQ = 0.7071067811865476;
 // HPF: 3rd-order Butterworth (one-pole + 2-pole with Q 1) = 18 dB/oct.  LPF: 2-pole Butterworth = 12 dB/oct.
 constexpr double hpfQ = 1.0, lpfQ = 0.7071067811865476;
 
@@ -32,13 +33,11 @@ struct Settings {
 	bool hpfOn = false, lpfOn = false;
 	double hpfFreq = 80, lpfFreq = 12000;
 	double hfGain = 0, hfFreq = 8000;
-	bool hfBell = false;
-	double hmfGain = 0, hmfFreq = 2500, hmfQ = 1;
-	double lmfGain = 0, lmfFreq = 600, lmfQ = 1;
-	double lfGain = 0, lfFreq = 100;
-	bool lfBell = false;
-	bool eqIn = true, proportionalQ = false;
-	double outputDb = 0;
+	double hmfGain = 0, hmfFreq = 3000, hmfQ = 0.8;
+	double lmfGain = 0, lmfFreq = 1000, lmfQ = 0.8;
+	double lfGain = 0, lfFreq = 200;
+	bool eqIn = true;
+	double mix = 100; // %
 };
 
 class ConsoleEq {
@@ -50,7 +49,7 @@ public:
 	}
 
 	void reset(const Settings &settings) {
-		for (auto *f : {&hpf2, &lpf, &lfShelf, &lfBell, &lmf, &hmf, &hfShelf, &hfBell}) f->reset();
+		for (auto *f : {&hpf2, &lpf, &lfShelf, &lmf, &hmf, &hfShelf}) f->reset();
 		hpf1.reset();
 		targets(settings, current); // no gliding after a reset
 		updateFilters();
@@ -67,9 +66,7 @@ public:
 			for (int i = 0; i < count; ++i) current[i] += (target[i] - current[i])*smoothingCoeff;
 			updateFilters();
 
-			const double hpfMix = current[sHpfMix], lpfMix = current[sLpfMix];
-			const double lfBellMix = current[sLfBellMix], hfBellMix = current[sHfBellMix], eqMix = current[sEqMix];
-			const double outputGain = std::pow(10.0, current[sOutputDb]/20);
+			const double hpfMix = current[sHpfMix], lpfMix = current[sLpfMix], eqMix = current[sEqMix];
 			for (int c = 0; c < 2; ++c) {
 				for (uint32_t i = start; i < end; ++i) {
 					double x = in[c][i];
@@ -80,20 +77,17 @@ public:
 					x += lpfMix*(lp - x);
 
 					double dry = x;
-					double shelf = lfShelf.process(c, x), bellOut = lfBell.process(c, x);
-					x = shelf + lfBellMix*(bellOut - shelf);
+					x = lfShelf.process(c, x);
 					x = lmf.process(c, x);
 					x = hmf.process(c, x);
-					shelf = hfShelf.process(c, x);
-					bellOut = hfBell.process(c, x);
-					x = shelf + hfBellMix*(bellOut - shelf);
+					x = hfShelf.process(c, x);
 					x = dry + eqMix*(x - dry);
 
-					out[c][i] = float(x*outputGain);
+					out[c][i] = float(x);
 				}
 			}
 		}
-		for (auto *f : {&hpf2, &lpf, &lfShelf, &lfBell, &lmf, &hmf, &hfShelf, &hfBell}) f->flushDenormals();
+		for (auto *f : {&hpf2, &lpf, &lfShelf, &lmf, &hmf, &hfShelf}) f->flushDenormals();
 		hpf1.flushDenormals();
 	}
 
@@ -103,12 +97,12 @@ private:
 
 	// Smoothed values: frequencies and Qs as log2 (so they glide evenly), gains in dB, switches as 0-1 crossfades
 	enum {sHpfMix, sHpfFreq, sLpfMix, sLpfFreq,
-		sHfGain, sHfFreq, sHfBellMix, sHmfGain, sHmfFreq, sHmfQ, sLmfGain, sLmfFreq, sLmfQ, sLfGain, sLfFreq, sLfBellMix,
-		sEqMix, sProportional, sOutputDb, count};
+		sHfGain, sHfFreq, sHmfGain, sHmfFreq, sHmfQ, sLmfGain, sLmfFreq, sLmfQ, sLfGain, sLfFreq,
+		sEqMix, sMix, count};
 	double current[count] = {};
 
 	OnePoleHighpass hpf1;
-	Svf hpf2, lpf, lfShelf, lfBell, lmf, hmf, hfShelf, hfBell;
+	Svf hpf2, lpf, lfShelf, lmf, hmf, hfShelf;
 
 	static void targets(const Settings &s, double *t) {
 		t[sHpfMix] = s.hpfOn;
@@ -117,7 +111,6 @@ private:
 		t[sLpfFreq] = std::log2(s.lpfFreq);
 		t[sHfGain] = s.hfGain;
 		t[sHfFreq] = std::log2(s.hfFreq);
-		t[sHfBellMix] = s.hfBell;
 		t[sHmfGain] = s.hmfGain;
 		t[sHmfFreq] = std::log2(s.hmfFreq);
 		t[sHmfQ] = std::log2(s.hmfQ);
@@ -126,29 +119,22 @@ private:
 		t[sLmfQ] = std::log2(s.lmfQ);
 		t[sLfGain] = s.lfGain;
 		t[sLfFreq] = std::log2(s.lfFreq);
-		t[sLfBellMix] = s.lfBell;
 		t[sEqMix] = s.eqIn;
-		t[sProportional] = s.proportionalQ;
-		t[sOutputDb] = s.outputDb;
-	}
-
-	double bellQ(double q, double gainDb) const {
-		double factor = proportionalQFactor(gainDb);
-		return q*(1 + current[sProportional]*(factor - 1));
+		t[sMix] = s.mix/100;
 	}
 
 	void updateFilters() {
 		const double *c = current;
-		const double sr = sampleRate;
+		const double sr = sampleRate, mix = c[sMix];
 		hpf1.set(std::exp2(c[sHpfFreq]), sr);
 		hpf2.set(highpass(std::exp2(c[sHpfFreq]), hpfQ, sr));
 		lpf.set(lowpass(std::exp2(c[sLpfFreq]), lpfQ, sr));
-		lfShelf.set(lowShelf(std::exp2(c[sLfFreq]), c[sLfGain], shelfQ, sr));
-		lfBell.set(bell(std::exp2(c[sLfFreq]), c[sLfGain], bellQ(outerBellQ, c[sLfGain]), sr));
-		lmf.set(bell(std::exp2(c[sLmfFreq]), c[sLmfGain], bellQ(std::exp2(c[sLmfQ]), c[sLmfGain]), sr));
-		hmf.set(bell(std::exp2(c[sHmfFreq]), c[sHmfGain], bellQ(std::exp2(c[sHmfQ]), c[sHmfGain]), sr));
-		hfShelf.set(highShelf(std::exp2(c[sHfFreq]), c[sHfGain], shelfQ, sr));
-		hfBell.set(bell(std::exp2(c[sHfFreq]), c[sHfGain], bellQ(outerBellQ, c[sHfGain]), sr));
+		// MIX scales every band's gain; the mid bands' Q follows their (scaled) gain
+		const double lfGain = c[sLfGain]*mix, lmfGain = c[sLmfGain]*mix, hmfGain = c[sHmfGain]*mix, hfGain = c[sHfGain]*mix;
+		lfShelf.set(lowShelf(std::exp2(c[sLfFreq]), lfGain, shelfQ, sr));
+		lmf.set(bell(std::exp2(c[sLmfFreq]), lmfGain, std::exp2(c[sLmfQ])*proportionalQFactor(lmfGain), sr));
+		hmf.set(bell(std::exp2(c[sHmfFreq]), hmfGain, std::exp2(c[sHmfQ])*proportionalQFactor(hmfGain), sr));
+		hfShelf.set(highShelf(std::exp2(c[sHfFreq]), hfGain, shelfQ, sr));
 	}
 };
 
