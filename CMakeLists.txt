@@ -53,3 +53,13 @@ add_wclap_bundle(
 	RESOURCES_DIR ${CMAKE_CURRENT_LIST_DIR}/plugins/console-eq/ui
 	EXTRA_FILES ${CMAKE_CURRENT_LIST_DIR}/LICENSE.txt
 )
+
+# ---- Digital Console EQ ----
+
+add_wclap_bundle(
+	NAME digital-console-eq
+	SOURCES
+		${CMAKE_CURRENT_LIST_DIR}/plugins/digital-console-eq/entry.cpp
+	RESOURCES_DIR ${CMAKE_CURRENT_LIST_DIR}/plugins/digital-console-eq/ui
+	EXTRA_FILES ${CMAKE_CURRENT_LIST_DIR}/LICENSE.txt
+)
