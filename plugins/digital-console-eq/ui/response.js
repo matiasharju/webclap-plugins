@@ -7,7 +7,7 @@
 (function (root) {
 	'use strict';
 
-	const butterworthQ = Math.SQRT1_2;
+	const butterworthQ = Math.SQRT1_2, shelfQ = Math.SQRT1_2;
 	const SHELF = 0, PEQ = 1; // band types (L and H only; bands 1-4 are always PEQ)
 
 	// The six bands: parameter keys, and which side the band's shelf works on
@@ -68,7 +68,7 @@
 	const bandType = (band, p) => band.type ? Math.round(p[band.type]) : PEQ;
 	function bandFilter(band, p, sr) {
 		const gain = p[band.gain]*p.mix/100, freq = p[band.freq], q = p[band.q], low = band.shelf === 'low';
-		if (bandType(band, p) === SHELF) return low ? lowShelf(freq, gain, q, sr) : highShelf(freq, gain, q, sr);
+		if (bandType(band, p) === SHELF) return low ? lowShelf(freq, gain, shelfQ, sr) : highShelf(freq, gain, shelfQ, sr);
 		return bell(freq, gain, q, sr);
 	}
 

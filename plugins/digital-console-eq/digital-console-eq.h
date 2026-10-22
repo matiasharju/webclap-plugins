@@ -19,6 +19,8 @@ using namespace webclap::dsp;
 
 constexpr int bandCount = 6; // L, 1, 2, 3, 4, H
 constexpr double butterworthQ = 0.7071067811865476;
+// L and H shelves have a fixed shape (no overshoot); their Q only applies in PEQ mode
+constexpr double shelfQ = 0.7071067811865476;
 
 enum BandType {typeShelf, typePeq};
 
@@ -168,8 +170,8 @@ private:
 			const double *bc = c + sBand + b*perBand;
 			const double gain = bc[bGain]*c[sMix], freq = std::exp2(bc[bFreq]), q = std::exp2(bc[bQ]);
 			bells[b].set(bell(freq, gain, q, sr));
-			if (b == 0) lShelf.set(lowShelf(freq, gain, q, sr));
-			if (b == bandCount - 1) hShelf.set(highShelf(freq, gain, q, sr));
+			if (b == 0) lShelf.set(lowShelf(freq, gain, shelfQ, sr));
+			if (b == bandCount - 1) hShelf.set(highShelf(freq, gain, shelfQ, sr));
 		}
 
 		// band solo

@@ -385,31 +385,6 @@
 		border-color: var(--lit, var(--lit-blue));
 		box-shadow: 0 0 10px color-mix(in srgb, var(--lit, var(--lit-blue)) 60%, transparent);
 	}
-	.icon-label {
-		display: flex;
-		align-items: center;
-		gap: 4px;
-		height: 22px;
-		padding: 0 8px;
-		border-radius: 3px;
-		background: #0d0e10;
-	}
-	.icon-label svg {
-		width: 66px;
-		height: 16px;
-		fill: none;
-		stroke-width: 1.8;
-		stroke-linecap: round;
-	}
-	/* only the band's current type is lit */
-	.icon-label path {
-		stroke: var(--lit-amber);
-		opacity: 0;
-		filter: drop-shadow(0 0 2px var(--lit-amber));
-	}
-	.icon-label path.lit {
-		opacity: 1;
-	}
 
 	/* knobs (encoders and small screen knobs) */
 	.knob {
@@ -549,13 +524,11 @@
 		</div>
 		<div class="hw-buttons">
 			<div class="hw" style="--lit: var(--lit-amber)"><button data-toggle="eqOn">EQ</button></div>
-			<div class="icon-label" id="l-type" title="Low band (L) shape: shelf or bell, and LC when the lo cut filter is on"><svg viewBox="0 0 66 16"><path data-type="0" d="M2 4 H7 Q11 4 12 10 Q13 12 18 12"/><path data-type="1" d="M24 13 Q30 13 32 4 Q34 13 40 13"/><path data-type="cut" d="M47 14 Q50 4 56 4 H64"/></svg></div>
 			<div class="modes">
 				<div class="hw"><button data-mode-button="gain">GAIN</button></div>
 				<div class="hw"><button data-mode-button="q">WIDTH</button></div>
 				<div class="hw"><button data-mode-button="freq">FREQ</button></div>
 			</div>
-			<div class="icon-label" id="h-type" title="High band (H) shape: bell or shelf, and HC when the hi cut filter is on"><svg viewBox="0 0 66 16"><path data-type="cut" d="M2 4 H10 Q16 4 19 14"/><path data-type="1" d="M26 13 Q32 13 34 4 Q36 13 42 13"/><path data-type="0" d="M48 12 Q53 12 54 10 Q55 4 59 4 H64"/></svg></div>
 			<div class="hw" style="--lit: var(--lit-green)"><button data-toggle-solo>LISTEN</button></div>
 		</div>
 		<div id="build"></div>
@@ -701,7 +674,8 @@
 		return String(v);
 	}
 	const bandType = b => EqResponse.bandType(BANDS[b], state);
-	const typeName = b => bandType(b) === EqResponse.SHELF ? 'SHV' : 'PEQ';
+	const isShelf = b => bandType(b) === EqResponse.SHELF;
+	const typeName = b => isShelf(b) ? 'SHV' : 'PEQ';
 
 	// ---- dragging (knobs, readouts, MIX) ----
 
@@ -809,7 +783,7 @@
 	const encoderBand = i => ui.shift ? (i === 0 ? 0 : i === 3 ? 5 : null) : i + 1;
 	const encoderKey = i => {
 		const b = encoderBand(i);
-		if (b === null) return null;
+		if (b === null || (ui.mode === 'q' && isShelf(b))) return null; // a shelf has no Q
 		return BANDS[b][MODE_KEY[ui.mode]];
 	};
 	encoders.forEach((el, i) => {
@@ -881,7 +855,7 @@
 	// readouts: GAIN / Q / FREQ of the selected band
 	const readouts = [...document.querySelectorAll('.readout')];
 	readouts.forEach(el => {
-		draggable(el, () => BANDS[ui.band][MODE_KEY[el.dataset.mode]], {axis: 'x', onPress: () => {ui.mode = el.dataset.mode; render();}});
+		draggable(el, () => el.classList.contains('hidden') ? null : BANDS[ui.band][MODE_KEY[el.dataset.mode]], {axis: 'x', onPress: () => {ui.mode = el.dataset.mode; render();}});
 	});
 	draggable(document.querySelector('.mix-readout'), () => 'mix', {axis: 'x'});
 
@@ -1021,6 +995,7 @@
 		if (b === null) return;
 		selectBand(b);
 		const band = BANDS[b];
+		if ((e.ctrlKey || e.metaKey) && isShelf(b)) return; // a shelf has no Q
 		const keys = e.ctrlKey || e.metaKey ? [band.q] : [band.gain, band.freq];
 		keys.forEach(beginGesture);
 		graphDrag = {b, keys, qMode: e.ctrlKey || e.metaKey, x: e.clientX, y: e.clientY, qNorm: toNorm(band.q, state[band.q])};
@@ -1060,6 +1035,7 @@
 		const b = bandAt(...canvasPoint(e)) ?? ui.band;
 		e.preventDefault();
 		selectBand(b);
+		if (isShelf(b)) return;
 		const key = BANDS[b].q;
 		gesture(key, () => {
 			const n = toNorm(key, state[key]) - Math.sign(e.deltaY)*(e.shiftKey ? 0.002 : 0.02);
@@ -1097,6 +1073,7 @@
 				const mode = el.dataset.mode, key = band[MODE_KEY[mode]];
 				el.classList.toggle('active', mode === ui.mode);
 				el.querySelector('.label').textContent = `${MODE_LABEL[mode]} ${band.label}`;
+				el.classList.toggle('hidden', mode === 'q' && isShelf(ui.band));
 				el.querySelector('.value').textContent = format(key, state[key]);
 				if (mode === 'q') {
 					const width = Math.max(4, (1 - toNorm(key, state[key]))*100);
@@ -1113,13 +1090,6 @@
 				drawKnob(el, key, b === null ? '' : BANDS[b].label);
 			});
 			paramKnobs.forEach(el => drawKnob(el, el.dataset.param, el.dataset.label));
-			// band type displays: the band's shape (shelf or bell), plus the input slot's cut filter when it's on
-			for (const [id, b, cutKey] of [['l-type', 0, 'lcOn'], ['h-type', 5, 'hcOn']]) {
-				document.querySelectorAll(`#${id} path`).forEach(path => {
-					const type = path.dataset.type;
-					path.classList.toggle('lit', type === 'cut' ? state[cutKey] >= 0.5 : Number(type) === bandType(b));
-				});
-			}
 
 			drawGraph();
 		});
