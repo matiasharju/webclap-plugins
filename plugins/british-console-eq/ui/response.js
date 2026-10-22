@@ -1,4 +1,4 @@
-// Frequency response of the British Console EQ, using exactly the same filter designs as console-eq.h
+// Frequency response of the British Console EQ, using exactly the same filter designs as british-console-eq.h
 // (and shared/webclap/dsp.h).
 // Used by the UI (to draw the curve) and by tests/smoke-test.mjs (to check the curve matches the audio).
 //

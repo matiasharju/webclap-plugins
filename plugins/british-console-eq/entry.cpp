@@ -1,9 +1,9 @@
-// Bundle "console-eq": British-console-style channel EQ
+// Bundle "british-console-eq": British-console-style channel EQ
 
 #include "webclap/entry.h"
 #include "webclap/plugin.h"
 
-#include "./console-eq.h"
+#include "./british-console-eq.h"
 
 namespace {
 
@@ -21,7 +21,7 @@ struct ConsoleEqPlugin : public webclap::Plugin {
 		};
 		static const clap_plugin_descriptor descriptor{
 			.clap_version=CLAP_VERSION_INIT,
-			.id="io.github.matiasharju.webclap-plugins.console-eq",
+			.id="io.github.matiasharju.webclap-plugins.british-console-eq",
 			.name="British Console EQ",
 			.vendor="WebCLAP Plugins",
 			.url="https://github.com/matiasharju/webclap-plugins",

@@ -44,13 +44,13 @@ add_wclap_bundle(
 	EXTRA_FILES ${CMAKE_CURRENT_LIST_DIR}/LICENSE.txt
 )
 
-# ---- Console EQ ----
+# ---- British Console EQ ----
 
 add_wclap_bundle(
-	NAME console-eq
+	NAME british-console-eq
 	SOURCES
-		${CMAKE_CURRENT_LIST_DIR}/plugins/console-eq/entry.cpp
-	RESOURCES_DIR ${CMAKE_CURRENT_LIST_DIR}/plugins/console-eq/ui
+		${CMAKE_CURRENT_LIST_DIR}/plugins/british-console-eq/entry.cpp
+	RESOURCES_DIR ${CMAKE_CURRENT_LIST_DIR}/plugins/british-console-eq/ui
 	EXTRA_FILES ${CMAKE_CURRENT_LIST_DIR}/LICENSE.txt
 )
 

@@ -53,7 +53,7 @@ jobs:
 
       - name: Assemble site
         env:
-          SITE_PLUGINS: console-eq digital-console-eq # plugins/<name> shown on the site (bundle: dist/<name>.wclap.tar.gz)
+          SITE_PLUGINS: british-console-eq digital-console-eq # plugins/<name> shown on the site (bundle: dist/<name>.wclap.tar.gz)
         run: |
           mkdir -p site/download site/demo
           cp -r web/* site/

@@ -6,7 +6,7 @@ The plugins are [WebCLAP](https://github.com/WebCLAP) (WCLAP) modules: [CLAP](ht
 
 ## Plugins
 
-- **Console EQ** (`console-eq.wclap.tar.gz`): British-console-style channel EQ
+- **British Console EQ** (`british-console-eq.wclap.tar.gz`): British-console-style channel EQ
 - **Digital Console EQ** (`digital-console-eq.wclap.tar.gz`): six-band EQ resembling the Behringer WING default EQ
 
 ## Using a plugin
@@ -38,7 +38,7 @@ This produces `dist/<bundle>.wclap.tar.gz`.
 node tests/smoke-test.mjs dist/airwindows.wclap.tar.gz
 ```
 
-A plugin UI can also be opened in a browser, where it runs in demo mode without audio. Serve the folder so `response.js` loads, e.g. `python -m http.server --directory plugins` and open `http://localhost:8000/console-eq/ui/`.
+A plugin UI can also be opened in a browser, where it runs in demo mode without audio. Serve the folder so `response.js` loads, e.g. `python -m http.server --directory plugins` and open `http://localhost:8000/british-console-eq/ui/`.
 
 ### Automatic builds
 
@@ -57,7 +57,7 @@ git push origin v0.2.0
 cmake/             build helpers (WASI toolchain, bundle packing, UI embedding)
 shared/webclap/    common plugin code: parameters, state, webview UI messages
 plugins/airwindows Airwindows ports (DSP + ui/)
-plugins/console-eq Console EQ (DSP + ui/)
+plugins/british-console-eq British Console EQ (DSP + ui/)
 tests/             headless smoke-test host
 web/               GitHub Pages site (download page)
 ```
