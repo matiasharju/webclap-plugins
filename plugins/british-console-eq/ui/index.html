@@ -388,6 +388,16 @@
 	const bubble = document.getElementById('bubble');
 	const polar = (deg, r) => [r*Math.sin(deg*Math.PI/180), -r*Math.cos(deg*Math.PI/180)];
 
+	// a colour darkened towards black, 0 = unchanged, 1 = black
+	function shade(hex, amount) {
+		const n = parseInt(hex.slice(1), 16);
+		const channel = shift => Math.round(((n >> shift) & 255)*(1 - amount));
+		return `rgb(${channel(16)}, ${channel(8)}, ${channel(0)})`;
+	}
+	// six grip grooves around the cap's side wall (they turn with the knob)
+	const grooves = [0, 60, 120, 180, 240, 300].map(angle =>
+		`<rect x="-2" y="-27.5" width="4" height="5.5" rx="1.4" fill="#000000" opacity="0.7" transform="rotate(${angle})"/>`).join('');
+
 	function knobSvg(knob) {
 		const p = PARAMS[knob.key];
 		let marks = '';
@@ -414,9 +424,14 @@
 			${marks}
 			<text class="unit" x="0" y="48">${unit}</text>
 			<circle class="skirt" r="31" fill="url(#skirt)" stroke="#2e3034" stroke-width="1"/>
-			<circle r="26" fill="${knob.color}"/>
-			<circle r="26" fill="url(#cap-shine)"/>
-			<line class="pointer" x1="0" y1="-5" x2="0" y2="-24" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+			<!-- cap: a darker side wall with six grip grooves, and a flat top lit from the top-left -->
+			<circle r="27" fill="${shade(knob.color, 0.55)}"/>
+			<g class="rotate">${grooves}</g>
+			<circle r="27" fill="url(#side-light)"/>
+			<circle r="22.5" fill="${knob.color}"/>
+			<circle r="22.5" fill="url(#face-light)"/>
+			<circle r="22.5" fill="none" stroke="url(#face-edge)" stroke-width="1.6"/>
+			<g class="rotate"><line x1="0" y1="-4" x2="0" y2="-20" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/></g>
 		</svg>`;
 	}
 
@@ -437,13 +452,22 @@
 	// shared gradients for the knobs
 	document.body.insertAdjacentHTML('beforeend', `<svg width="0" height="0" style="position:absolute">
 		<defs>
-			<radialGradient id="skirt" cx="40%" cy="30%" r="80%">
-				<stop offset="0" stop-color="#ffffff"/><stop offset="0.55" stop-color="#c4c6c9"/><stop offset="1" stop-color="#6d7075"/>
-			</radialGradient>
-			<radialGradient id="cap-shine" cx="38%" cy="30%" r="75%">
-				<stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/><stop offset="0.45" stop-color="#ffffff" stop-opacity="0.08"/>
+			<!-- all light comes from the top-left -->
+			<linearGradient id="skirt" x1="0.15" y1="0.1" x2="0.85" y2="0.95">
+				<stop offset="0" stop-color="#f4f5f6"/><stop offset="0.5" stop-color="#b5b8bc"/><stop offset="1" stop-color="#5f6267"/>
+			</linearGradient>
+			<linearGradient id="side-light" x1="0.15" y1="0.1" x2="0.85" y2="0.95">
+				<stop offset="0" stop-color="#ffffff" stop-opacity="0.35"/><stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
 				<stop offset="1" stop-color="#000000" stop-opacity="0.35"/>
-			</radialGradient>
+			</linearGradient>
+			<linearGradient id="face-light" x1="0" y1="0" x2="1" y2="1">
+				<stop offset="0" stop-color="#ffffff" stop-opacity="0.2"/><stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
+				<stop offset="1" stop-color="#000000" stop-opacity="0.12"/>
+			</linearGradient>
+			<linearGradient id="face-edge" x1="0.15" y1="0.1" x2="0.85" y2="0.95">
+				<stop offset="0" stop-color="#ffffff" stop-opacity="0.75"/><stop offset="0.5" stop-color="#ffffff" stop-opacity="0.1"/>
+				<stop offset="1" stop-color="#000000" stop-opacity="0.5"/>
+			</linearGradient>
 		</defs></svg>`);
 
 	for (const [text, x, y] of LABELS) {
@@ -658,7 +682,8 @@
 			frame = 0;
 			knobEls.forEach(el => {
 				const key = el.dataset.key;
-				el.querySelector('.pointer').setAttribute('transform', `rotate(${valueToAngle(key, state[key])})`);
+				const rotation = `rotate(${valueToAngle(key, state[key])})`;
+				el.querySelectorAll('.rotate').forEach(group => group.setAttribute('transform', rotation));
 				el.setAttribute('aria-valuetext', format(key, state[key]));
 			});
 			switchEls.forEach(({el, key}) => el.querySelector('button').setAttribute('aria-pressed', state[key] >= 0.5));
