@@ -232,20 +232,20 @@
 		lpfOn: {min: 0, max: 1, def: 0},
 		lpfFreq: {min: 3000, max: 22000, def: 12000, unit: 'Hz', log: true, kHz: true,
 			scale: [[3000, -135], [5000, -90], [8000, -45], [12000, 0], [15000, 45], [18000, 90], [22000, 135]]},
-		lfGain: {min: -20, max: 20, def: 0, unit: 'dB'},
+		lfGain: {min: -18, max: 18, def: 0, unit: 'dB'},
 		lfFreq: {min: 30, max: 450, def: 200, unit: 'Hz', log: true,
 			scale: [[30, -135], [50, -90], [100, -45], [200, 0], [300, 45], [450, 135]]},
-		lmfGain: {min: -20, max: 20, def: 0, unit: 'dB'},
+		lmfGain: {min: -18, max: 18, def: 0, unit: 'dB'},
 		lmfFreq: {min: 100, max: 2500, def: 1000, unit: 'Hz', log: true, kHz: true,
 			scale: [[100, -135], [200, -90], [400, -45], [1000, 0], [1500, 45], [2000, 90], [2500, 135]]},
 		lmfQ: {min: 0.1, max: 3.5, def: 0.8, unit: 'Q', log: true,
 			scale: [[0.1, -135], [0.3, -67.5], [0.8, 0], [1.5, 67.5], [3.5, 135]]},
-		hmfGain: {min: -20, max: 20, def: 0, unit: 'dB'},
+		hmfGain: {min: -18, max: 18, def: 0, unit: 'dB'},
 		hmfFreq: {min: 600, max: 7000, def: 3000, unit: 'Hz', log: true, kHz: true,
 			scale: [[600, -135], [800, -90], [1500, -45], [3000, 0], [4500, 45], [6000, 90], [7000, 135]]},
 		hmfQ: {min: 0.1, max: 3.5, def: 0.8, unit: 'Q', log: true,
 			scale: [[0.1, -135], [0.3, -67.5], [0.8, 0], [1.5, 67.5], [3.5, 135]]},
-		hfGain: {min: -20, max: 20, def: 0, unit: 'dB'},
+		hfGain: {min: -18, max: 18, def: 0, unit: 'dB'},
 		hfFreq: {min: 1500, max: 16000, def: 8000, unit: 'Hz', log: true, kHz: true,
 			scale: [[1500, -135], [2000, -90], [5000, -45], [8000, 0], [10000, 45], [14000, 90], [16000, 135]]},
 		eqIn: {min: 0, max: 1, def: 1},
@@ -551,7 +551,7 @@
 	const canvas = document.getElementById('curve');
 	const ctx = canvas.getContext('2d');
 	const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-	const F_MIN = 20, F_MAX = 20000, DB_RANGE = 22;
+	const F_MIN = 20, F_MAX = 20000, DB_RANGE = 20;
 	const BAND_FREQ = {lf: 'lfFreq', lmf: 'lmfFreq', hmf: 'hmfFreq', hf: 'hfFreq'};
 
 	function drawCurve() {
@@ -576,13 +576,13 @@
 			ctx.fillText(label, f === 20000 ? w - 3*s : xOf(f) + 3*s, h - 4*s);
 		}
 		ctx.textAlign = 'left';
-		for (const db of [-20, -10, 10, 20]) {
+		for (const db of [-18, -12, -6, 6, 12, 18]) {
 			ctx.strokeStyle = css('--grid');
 			ctx.beginPath();
 			ctx.moveTo(0, yOf(db));
 			ctx.lineTo(w, yOf(db));
 			ctx.stroke();
-			if (Math.abs(db) === 10) ctx.fillText((db > 0 ? '+' : '') + db, 4*s, yOf(db) - 3*s);
+			if (Math.abs(db) === 12) ctx.fillText((db > 0 ? '+' : '') + db, 4*s, yOf(db) - 3*s);
 		}
 		ctx.strokeStyle = css('--grid-strong');
 		ctx.beginPath();
