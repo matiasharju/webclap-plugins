@@ -6,10 +6,8 @@ The plugins are [WebCLAP](https://github.com/WebCLAP) (WCLAP) modules: [CLAP](ht
 
 ## Plugins
 
-| Bundle | Plugin | Status |
-|---|---|---|
-| `console-eq.wclap.tar.gz` | **Console EQ**: British-console-style channel EQ | first version |
-| | **Studio EQ**: graphical EQ with draggable bands | planned |
+- **Console EQ** (`console-eq.wclap.tar.gz`): British-console-style channel EQ
+- **Digital Console EQ** (`digital-console-eq.wclap.tar.gz`): six-band EQ resembling the Behringer WING default EQ
 
 ## Using a plugin
 
